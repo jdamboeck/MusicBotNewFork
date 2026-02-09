@@ -2,7 +2,22 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const { Player, useQueue } = require("discord-player");
 const { DefaultExtractors } = require("@discord-player/extractor");
 const { YtDlpExtractor } = require("./ytdlp-extractor");
-const botToken = process.env.BOT_TOKEN || require("./env").botToken;
+let botToken = process.env.BOT_TOKEN;
+if (!botToken) {
+	try {
+		botToken = require("./env.json").botToken;
+	} catch (e) {
+		if (e.code === "MODULE_NOT_FOUND" || (e.message && e.message.includes("JSON"))) {
+			console.error("Missing or invalid env.json. Copy env.example.json to env.json and set your botToken (or set BOT_TOKEN env var).");
+			process.exit(1);
+		}
+		throw e;
+	}
+}
+if (!botToken) {
+	console.error("env.json must contain botToken (or set BOT_TOKEN env var).");
+	process.exit(1);
+}
 
 const client = new Client({
 	intents: [
@@ -28,6 +43,20 @@ player.events.on("error", (queue, error) => {
 });
 player.events.on("playerError", (queue, error) => {
 	console.error(`Audio player error: ${error.message}`);
+});
+
+// Keep bot activity in sync with the currently playing track (Discord allows 128 chars for activity name)
+const MAX_ACTIVITY_NAME = 128;
+function setBotActivity(name) {
+	if (!client.user) return;
+	const text = name && name.length > MAX_ACTIVITY_NAME ? name.slice(0, MAX_ACTIVITY_NAME - 3) + "..." : name;
+	client.user.setActivity(text || null);
+}
+player.events.on("playerStart", (_queue, track) => {
+	setBotActivity(track.title);
+});
+player.events.on("emptyQueue", () => {
+	setBotActivity(null);
 });
 
 // This "extracts" the stream from URLs (YouTube, etc.)
@@ -89,6 +118,7 @@ client.on("messageCreate", async (message) => {
 			if (!queue) return message.reply("There is no music playing!");
 
 			queue.delete();
+			setBotActivity(null);
 			return message.reply("Stopped the player and cleared the queue!");
 		}
 		case "pause": {
