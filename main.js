@@ -45,6 +45,20 @@ player.events.on("playerError", (queue, error) => {
 	console.error(`Audio player error: ${error.message}`);
 });
 
+// Keep bot activity in sync with the currently playing track (Discord allows 128 chars for activity name)
+const MAX_ACTIVITY_NAME = 128;
+function setBotActivity(name) {
+	if (!client.user) return;
+	const text = name && name.length > MAX_ACTIVITY_NAME ? name.slice(0, MAX_ACTIVITY_NAME - 3) + "..." : name;
+	client.user.setActivity(text || null);
+}
+player.events.on("playerStart", (_queue, track) => {
+	setBotActivity(track.title);
+});
+player.events.on("emptyQueue", () => {
+	setBotActivity(null);
+});
+
 // This "extracts" the stream from URLs (YouTube, etc.)
 
 async function init() {
@@ -104,6 +118,7 @@ client.on("messageCreate", async (message) => {
 			if (!queue) return message.reply("There is no music playing!");
 
 			queue.delete();
+			setBotActivity(null);
 			return message.reply("Stopped the player and cleared the queue!");
 		}
 		case "pause": {
