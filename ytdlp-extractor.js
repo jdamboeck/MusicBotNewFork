@@ -1,53 +1,9 @@
-const { spawn, spawnSync } = require("child_process");
+const { spawn } = require("child_process");
 const { fetchPoToken, PoTokenCache } = require("./po-token-provider");
-const path = require("path");
-const fs = require("fs");
+const { getJsRuntimeArgs, YTDLP_PATH } = require("./ytdlp-path");
 const { BaseExtractor } = require("discord-player");
 
-// Initialize PO token cache
 const poTokenCache = new PoTokenCache(6); // 6 hour TTL
-
-// Resolve yt-dlp executable: system PATH (if available) → project binary → node_modules
-const projectRoot = __dirname;
-const localBinary = path.join(projectRoot, "yt-dlp");
-const nodeModulesBinPaths = [
-	path.join(projectRoot, "node_modules", "youtube-dl-exec", "bin", "yt-dlp"),
-	path.join(projectRoot, "node_modules", "youtube-dl-exec", "bin", "youtube-dl"),
-];
-
-function getYtDlpPath() {
-	// 1. System-installed (PATH) - prefer so we get a recent yt-dlp that supports --js-runtimes
-	try {
-		const r = spawnSync("yt-dlp", ["--version"], { encoding: "utf8", stdio: "pipe" });
-		if (r.status === 0) return "yt-dlp";
-	} catch {
-		// not in PATH
-	}
-	// 2. Project folder binary (must be executable)
-	try {
-		fs.accessSync(localBinary, fs.constants.X_OK);
-		return localBinary;
-	} catch {
-		// not present or not executable
-	}
-	// 3. node_modules (e.g. youtube-dl-exec)
-	for (const binPath of nodeModulesBinPaths) {
-		try {
-			fs.accessSync(binPath, fs.constants.X_OK);
-			return binPath;
-		} catch {
-			// skip
-		}
-	}
-	return "yt-dlp";
-}
-const YTDLP_PATH = getYtDlpPath();
-
-// Only pass --js-runtimes when using system yt-dlp; bundled (e.g. youtube-dl-exec) may not support it
-function getJsRuntimeArgs() {
-	if (YTDLP_PATH !== "yt-dlp") return [];
-	return ["--js-runtimes", `node:${process.execPath}`];
-}
 
 class YtDlpExtractor extends BaseExtractor {
 	static identifier = "com.custom.yt-dlp";
@@ -80,16 +36,14 @@ class YtDlpExtractor extends BaseExtractor {
 				isUrl ? query : `ytsearch1:${query}`, // Limit search to 1 result
 			];
 
-			// NOTE: Make sure yt-dlp is in your PATH or current directory
-			const process = spawn(YTDLP_PATH, args);
+			const child = spawn(YTDLP_PATH, args);
 
 			let data = "";
-			process.stdout.on("data", (chunk) => (data += chunk));
+			child.stdout.on("data", (chunk) => (data += chunk));
 
-			// Log errors if any
-			process.stderr.on("data", (chunk) => console.error(`[yt-dlp error] ${chunk}`));
+			child.stderr.on("data", (chunk) => console.error(`[yt-dlp error] ${chunk}`));
 
-			process.on("close", (code) => {
+			child.on("close", (code) => {
 				if (code !== 0 || !data) {
 					console.log(`[yt-dlp] Process exited with code ${code}`);
 					return resolve({ tracks: [] });

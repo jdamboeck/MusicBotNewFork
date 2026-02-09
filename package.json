@@ -1,12 +1,12 @@
 {
   "name": "MusicBotNewFork",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Discord music bot with yt-dlp and PO token support for YouTube",
   "main": "main.js",
   "scripts": {
     "start": "node main.js",
     "start:full": "./start.sh",
-    "postinstall": "cd bgutil-ytdlp-pot-provider/server && npm install"
+    "postinstall": "./scripts/postinstall.sh && node scripts/ensure-yt-dlp.js"
   },
   "engines": {
     "node": ">=18"
