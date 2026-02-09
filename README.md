@@ -73,6 +73,24 @@ npm start
 
 The provider listens on `http://127.0.0.1:4416` by default. To use another host/port, set it in `po-token-provider.js` and when starting the provider (e.g. `node build/main.js --port 8080`).
 
+## Docker
+
+Build the image (from the project root):
+
+```bash
+docker build -t music-bot .
+```
+
+Run the container. Pass your Discord bot token via the `BOT_TOKEN` environment variable (replace with your real token):
+
+```bash
+docker run --rm -e BOT_TOKEN=your_discord_bot_token_here music-bot
+```
+
+The image runs both the PO token provider and the bot (same as `./start.sh`). FFmpeg, Python, and the canvas build dependencies for the provider are included.
+
+For **CapRover** (or other PaaS using captain-definition), deploy the app and set `BOT_TOKEN` in the app’s environment variables. The repo includes a `captain-definition` file that builds from this Dockerfile.
+
 ## Commands
 
 All commands use the **`#`** prefix.

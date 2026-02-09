@@ -1,6 +1,12 @@
-FROM node:20-alpine
+FROM node:20-bookworm-slim
 
-RUN apk add --no-cache git ffmpeg
+# Runtime deps + build deps for canvas (PO provider server); Debian/glibc avoids Alpine/musl canvas build issues
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    git ffmpeg python3 \
+    build-essential pkg-config \
+    libcairo2-dev libpango1.0-dev libjpeg-dev libpng-dev libgif-dev librsvg2-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

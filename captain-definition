@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "dockerfileLines": [
-    "FROM node:20-alpine",
-    "RUN apk add --no-cache git ffmpeg",
+    "FROM node:20-bookworm-slim",
+    "RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates git ffmpeg python3 build-essential pkg-config libcairo2-dev libpango1.0-dev libjpeg-dev libpng-dev libgif-dev librsvg2-dev && rm -rf /var/lib/apt/lists/*",
     "WORKDIR /app",
     "ADD https://api.github.com/repos/jdamboeck/MusicBotNewFork/git/ref/heads/main version.json",
     "RUN git init && \\",
