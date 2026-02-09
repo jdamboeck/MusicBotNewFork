@@ -4,7 +4,7 @@ echo "Starting BgUtil PO Token Provider Server..."
 cd bgutil-ytdlp-pot-provider/server
 if [ ! -f build/main.js ]; then
   echo "Building PO Token Provider (first run)..."
-  npm run build
+  npx tsc
 fi
 node build/main.js &
 PO_PROVIDER_PID=$!

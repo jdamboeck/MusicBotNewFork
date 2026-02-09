@@ -22,7 +22,7 @@ RUN git init && \
 
 RUN npm install
 
-RUN cd bgutil-ytdlp-pot-provider/server && npm install && npm run build
+RUN cd bgutil-ytdlp-pot-provider/server && npm install && npx tsc
 
 RUN chmod +x start.sh
 
