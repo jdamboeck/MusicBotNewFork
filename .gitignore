@@ -4,4 +4,4 @@ node_modules/
 bgutil-ytdlp-pot-provider/server/build
 env.json
 bgutil-ytdlp-pot-provider/server/tsconfig.tsbuildinfo
-*/__pycache__/*
+**/__pycache__/**
