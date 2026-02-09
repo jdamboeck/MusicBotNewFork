@@ -1,4 +1,5 @@
 const { Client, GatewayIntentBits } = require("discord.js");
+const { ActivityType } = require("discord-api-types/v10");
 const { Player, useQueue } = require("discord-player");
 const { DefaultExtractors } = require("@discord-player/extractor");
 const { YtDlpExtractor } = require("./ytdlp-extractor");
@@ -45,15 +46,51 @@ player.events.on("playerError", (queue, error) => {
 	console.error(`Audio player error: ${error.message}`);
 });
 
-// Keep bot activity in sync with the currently playing track (Discord allows 128 chars for activity name)
-const MAX_ACTIVITY_NAME = 128;
-function setBotActivity(name) {
-	if (!client.user) return;
-	const text = name && name.length > MAX_ACTIVITY_NAME ? name.slice(0, MAX_ACTIVITY_NAME - 3) + "..." : name;
-	client.user.setActivity(text || null);
+// Keep bot activity in sync with the currently playing track (Discord allows 128 chars each for name and state)
+const MAX_ACTIVITY_LEN = 128;
+function truncate(str, max = MAX_ACTIVITY_LEN) {
+	return str && str.length > max ? str.slice(0, max - 3) + "..." : str;
 }
-player.events.on("playerStart", (_queue, track) => {
-	setBotActivity(track.title);
+function setBotActivity(activityOrName) {
+	if (!client.user) return;
+	if (!activityOrName) {
+		client.user.setActivity(null);
+		return;
+	}
+	if (typeof activityOrName === "string") {
+		client.user.setActivity(truncate(activityOrName));
+		return;
+	}
+	// Full activity: { name, state?, type?, url? }
+	const name = truncate(activityOrName.name);
+	const state = activityOrName.state != null ? truncate(String(activityOrName.state)) : undefined;
+	const opts = { type: activityOrName.type ?? ActivityType.Playing, state };
+	if (activityOrName.url) opts.url = activityOrName.url;
+	client.user.setActivity(name, opts);
+}
+
+function isYouTubeUrl(url) {
+	if (!url || typeof url !== "string") return false;
+	try {
+		const u = new URL(url);
+		return u.hostname === "youtube.com" || u.hostname === "www.youtube.com" || u.hostname === "youtu.be";
+	} catch {
+		return false;
+	}
+}
+
+player.events.on("playerStart", (queue, track) => {
+	const channel = queue.channel;
+	const listeners = channel?.members?.filter((m) => !m.user.bot).size ?? 0;
+	const channelName = channel?.name ?? "voice";
+	const state = `to ${listeners} listener${listeners !== 1 ? "s" : ""} in #${channelName}`;
+	const isYoutube = isYouTubeUrl(track.url);
+	setBotActivity({
+		name: track.title,
+		state,
+		type: isYoutube ? ActivityType.Streaming : ActivityType.Listening,
+		...(isYoutube && track.url && { url: track.url }),
+	});
 });
 player.events.on("emptyQueue", () => {
 	setBotActivity(null);
