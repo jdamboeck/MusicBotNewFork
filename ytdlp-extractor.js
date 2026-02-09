@@ -59,6 +59,7 @@ class YtDlpExtractor extends BaseExtractor {
 			// Determine if it's a direct URL or a search query
 			const isUrl = query.startsWith("http");
 			const args = [
+				"--js-runtimes", `node:${process.execPath}`, // YouTube EJS needs a JS runtime; use same Node as bot
 				"--dump-json", // Get metadata as JSON
 				"--flat-playlist", // Don't expand large playlists (speed)
 				"--no-playlist", // Prefer single video if mixed
@@ -121,7 +122,10 @@ class YtDlpExtractor extends BaseExtractor {
 			}
 		}
 
-		const args = ["-o", "-", "-f", "bestaudio", "--no-playlist"];
+		const args = [
+			"--js-runtimes", `node:${process.execPath}`, // YouTube EJS needs a JS runtime; use same Node as bot
+			"-o", "-", "-f", "bestaudio", "--no-playlist",
+		];
 
 		// Add PO token if available
 		if (poToken) {
