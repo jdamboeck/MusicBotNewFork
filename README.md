@@ -7,7 +7,7 @@ Discord music bot that plays audio from YouTube (and other sources) using **yt-d
 - **Node.js** 18+
 - **FFmpeg** (used by discord-player for audio)
 - **Discord bot token** ([Discord Developer Portal](https://discord.com/developers/applications))
-- **yt-dlp**: either installed on your system, provided by the `youtube-dl-exec` npm package (installed with the project), or a vendored `yt-dlp` binary in the project root (must be executable)
+- **yt-dlp**: either installed on your system or downloaded automatically by postinstall to the project root
 
 ## Installation
 
@@ -51,17 +51,21 @@ Invite the bot to your server with scopes: `bot`, and permissions: **Connect**, 
 
 Starts the BgUtil PO token provider (for YouTube), then the music bot. Use this if you want the best chance of avoiding YouTube 403s:
 
+**Linux / macOS:**
+
 ```bash
 npm run start:full
-```
-
-Or directly:
-
-```bash
+# or directly:
 ./start.sh
 ```
 
-The first run will install server dependencies and build the provider if needed.
+**Windows:**
+
+```cmd
+start.bat
+```
+
+The postinstall script automatically clones, builds, and sets up the PO token provider, so everything is ready after `npm install`.
 
 ### Run bot only
 
@@ -89,7 +93,7 @@ docker run --rm -e BOT_TOKEN=your_discord_bot_token_here music-bot
 
 The image runs both the PO token provider and the bot (same as `./start.sh`). FFmpeg, Python, and the canvas build dependencies for the provider are included.
 
-For **CapRover** (or other PaaS using captain-definition), deploy the app and set `BOT_TOKEN` in the app’s environment variables. The repo includes a `captain-definition` file that builds from this Dockerfile.
+For **CapRover** (or other PaaS using captain-definition), deploy the app and set `BOT_TOKEN` in the app's environment variables. The repo includes a `captain-definition` file that builds from this Dockerfile.
 
 ## Commands
 
@@ -107,16 +111,25 @@ You must be in a voice channel to use `#play`.
 ## How it works
 
 - **discord-player** handles queues and audio; **yt-dlp** is used to resolve and stream YouTube (and similar) content via a custom extractor.
-- **PO token provider** ([bgutil-ytdlp-pot-provider](bgutil-ytdlp-pot-provider)) runs as a small HTTP service and provides proof-of-origin tokens. The bot fetches a token and passes it to yt-dlp to reduce the chance of YouTube returning 403. Tokens are cached for 6 hours.
-- **yt-dlp** is resolved in this order: project-root `yt-dlp` (if executable) → `node_modules/youtube-dl-exec/bin` → system `yt-dlp` in PATH.
+- **PO token provider** ([bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider)) runs as a small HTTP service and provides proof-of-origin tokens. The bot fetches a token and passes it to yt-dlp to reduce the chance of YouTube returning 403. Tokens are cached for 6 hours.
+- **yt-dlp** is resolved in this order: system `yt-dlp` in PATH → project-root `yt-dlp` binary (downloaded automatically by postinstall if not in PATH).
+- **yt-dlp plugins** are loaded from the `yt-dlp-plugins/` directory next to the yt-dlp binary. The postinstall script copies the bgutil plugin there automatically.
+
+### What postinstall does
+
+When you run `npm install`, the postinstall scripts:
+
+1. **`ensure-bgutil-plugin.js`** — Clones `bgutil-ytdlp-pot-provider` (if not already present), copies the yt-dlp plugin to `yt-dlp-plugins/`, and builds the provider server (`npm install` + `npx tsc`).
+2. **`ensure-yt-dlp.js`** — Downloads the `yt-dlp` binary to the project root if it's not already installed system-wide.
 
 ## Troubleshooting
 
 - **"Missing or invalid env.json"** — Set `BOT_TOKEN` or create `env.json` from `env.example.json` with your Discord bot token.
-- **"Cannot find package 'axios'"** — The PO provider’s dependencies are not installed. Run `npm install` once (root `postinstall` should do it), or run `npm install` inside `bgutil-ytdlp-pot-provider/server` and ensure `build/main.js` exists (`npm run build` there).
-- **EACCES on yt-dlp** — The local `yt-dlp` file is not executable. Run `chmod +x yt-dlp` or install yt-dlp system-wide so the fallback to PATH is used.
-- **403 from YouTube** — Ensure the PO token provider is running (`npm run start:full` or start it manually). If it still fails, YouTube may be blocking your IP or require other measures (e.g. cookies).
+- **"Cannot find package 'axios'"** — The PO provider's dependencies are not installed. Run `npm install` (postinstall handles this automatically). If it still fails, run `npm install` inside `bgutil-ytdlp-pot-provider/server` and ensure `build/main.js` exists (`npx tsc` there).
+- **EACCES on yt-dlp** — The local `yt-dlp` file is not executable. Run `chmod +x yt-dlp` or install yt-dlp system-wide (PATH takes priority).
+- **403 from YouTube** — Ensure the PO token provider is running (`npm run start:full` / `start.bat`, or start it manually). If it still fails, YouTube may be blocking your IP or require other measures (e.g. cookies).
 - **No audio** — Ensure FFmpeg is installed and on your PATH.
+- **Plugin not loading** — Verify `yt-dlp-plugins/bgutil-ytdlp-pot-provider/yt_dlp_plugins/extractor/` exists. If not, re-run `npm install` or manually copy from `bgutil-ytdlp-pot-provider/plugin/`.
 
 ## License
 
