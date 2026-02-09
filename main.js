@@ -2,7 +2,22 @@ const { Client, GatewayIntentBits } = require("discord.js");
 const { Player, useQueue } = require("discord-player");
 const { DefaultExtractors } = require("@discord-player/extractor");
 const { YtDlpExtractor } = require("./ytdlp-extractor");
-const botToken = process.env.BOT_TOKEN || require("./env").botToken;
+let botToken = process.env.BOT_TOKEN;
+if (!botToken) {
+	try {
+		botToken = require("./env.json").botToken;
+	} catch (e) {
+		if (e.code === "MODULE_NOT_FOUND" || (e.message && e.message.includes("JSON"))) {
+			console.error("Missing or invalid env.json. Copy env.example.json to env.json and set your botToken (or set BOT_TOKEN env var).");
+			process.exit(1);
+		}
+		throw e;
+	}
+}
+if (!botToken) {
+	console.error("env.json must contain botToken (or set BOT_TOKEN env var).");
+	process.exit(1);
+}
 
 const client = new Client({
 	intents: [

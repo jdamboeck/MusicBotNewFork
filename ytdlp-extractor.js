@@ -1,15 +1,41 @@
 const { spawn } = require("child_process");
 const { fetchPoToken, PoTokenCache } = require("./po-token-provider");
 const path = require("path");
+const fs = require("fs");
 const { BaseExtractor } = require("discord-player");
 
 // Initialize PO token cache
 const poTokenCache = new PoTokenCache(6); // 6 hour TTL
 
-// Path to yt-dlp executable
-// Using platform-independent zipimport binary for Linux/Docker
-const YTDLP_PATH = path.join(__dirname, "yt-dlp"); // Use local yt-dlp binary
-// Alternative: const YTDLP_PATH = "yt-dlp"; // Use system PATH
+// Resolve yt-dlp executable: project binary → node_modules → system PATH
+const projectRoot = __dirname;
+const localBinary = path.join(projectRoot, "yt-dlp");
+const nodeModulesBinPaths = [
+	path.join(projectRoot, "node_modules", "youtube-dl-exec", "bin", "yt-dlp"),
+	path.join(projectRoot, "node_modules", "youtube-dl-exec", "bin", "youtube-dl"),
+];
+
+function getYtDlpPath() {
+	// 1. Project folder binary (must be executable)
+	try {
+		fs.accessSync(localBinary, fs.constants.X_OK);
+		return localBinary;
+	} catch {
+		// not present or not executable
+	}
+	// 2. node_modules (e.g. youtube-dl-exec)
+	for (const binPath of nodeModulesBinPaths) {
+		try {
+			fs.accessSync(binPath, fs.constants.X_OK);
+			return binPath;
+		} catch {
+			// skip
+		}
+	}
+	// 3. System-installed (PATH)
+	return "yt-dlp";
+}
+const YTDLP_PATH = getYtDlpPath();
 
 class YtDlpExtractor extends BaseExtractor {
 	static identifier = "com.custom.yt-dlp";
