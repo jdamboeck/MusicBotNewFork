@@ -1,4 +1,4 @@
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const { fetchPoToken, PoTokenCache } = require("./po-token-provider");
 const path = require("path");
 const fs = require("fs");
@@ -7,7 +7,7 @@ const { BaseExtractor } = require("discord-player");
 // Initialize PO token cache
 const poTokenCache = new PoTokenCache(6); // 6 hour TTL
 
-// Resolve yt-dlp executable: project binary → node_modules → system PATH
+// Resolve yt-dlp executable: system PATH (if available) → project binary → node_modules
 const projectRoot = __dirname;
 const localBinary = path.join(projectRoot, "yt-dlp");
 const nodeModulesBinPaths = [
@@ -16,14 +16,21 @@ const nodeModulesBinPaths = [
 ];
 
 function getYtDlpPath() {
-	// 1. Project folder binary (must be executable)
+	// 1. System-installed (PATH) - prefer so we get a recent yt-dlp that supports --js-runtimes
+	try {
+		const r = spawnSync("yt-dlp", ["--version"], { encoding: "utf8", stdio: "pipe" });
+		if (r.status === 0) return "yt-dlp";
+	} catch {
+		// not in PATH
+	}
+	// 2. Project folder binary (must be executable)
 	try {
 		fs.accessSync(localBinary, fs.constants.X_OK);
 		return localBinary;
 	} catch {
 		// not present or not executable
 	}
-	// 2. node_modules (e.g. youtube-dl-exec)
+	// 3. node_modules (e.g. youtube-dl-exec)
 	for (const binPath of nodeModulesBinPaths) {
 		try {
 			fs.accessSync(binPath, fs.constants.X_OK);
@@ -32,10 +39,15 @@ function getYtDlpPath() {
 			// skip
 		}
 	}
-	// 3. System-installed (PATH)
 	return "yt-dlp";
 }
 const YTDLP_PATH = getYtDlpPath();
+
+// Only pass --js-runtimes when using system yt-dlp; bundled (e.g. youtube-dl-exec) may not support it
+function getJsRuntimeArgs() {
+	if (YTDLP_PATH !== "yt-dlp") return [];
+	return ["--js-runtimes", `node:${process.execPath}`];
+}
 
 class YtDlpExtractor extends BaseExtractor {
 	static identifier = "com.custom.yt-dlp";
@@ -59,7 +71,7 @@ class YtDlpExtractor extends BaseExtractor {
 			// Determine if it's a direct URL or a search query
 			const isUrl = query.startsWith("http");
 			const args = [
-				"--js-runtimes", `node:${process.execPath}`, // YouTube EJS needs a JS runtime; use same Node as bot
+				...getJsRuntimeArgs(),
 				"--dump-json", // Get metadata as JSON
 				"--flat-playlist", // Don't expand large playlists (speed)
 				"--no-playlist", // Prefer single video if mixed
@@ -123,7 +135,7 @@ class YtDlpExtractor extends BaseExtractor {
 		}
 
 		const args = [
-			"--js-runtimes", `node:${process.execPath}`, // YouTube EJS needs a JS runtime; use same Node as bot
+			...getJsRuntimeArgs(),
 			"-o", "-", "-f", "bestaudio", "--no-playlist",
 		];
 
