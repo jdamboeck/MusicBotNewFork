@@ -22,8 +22,6 @@ RUN git init && \
 
 RUN npm install
 
-RUN cd bgutil-ytdlp-pot-provider/server && npm install && npx tsc
-
 RUN chmod +x start.sh
 
 # Set BOT_TOKEN at runtime: docker run -e BOT_TOKEN=your_token ...
