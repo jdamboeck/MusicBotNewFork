@@ -142,15 +142,46 @@ class YtDlpExtractor extends BaseExtractor {
 		// Add PO token if available
 		if (poToken) {
 			args.push("--extractor-args", `youtube:po_token=web.gvs+${poToken}`);
-			console.log("[yt-dlp] Using PO token for stream");
+			const tokenPreview = poToken.length > 8 ? `${poToken.slice(0, 4)}...${poToken.slice(-4)}` : "***";
+			console.log(`[yt-dlp] Using PO token for stream (token: ${tokenPreview})`);
+		} else {
+			console.log("[yt-dlp] No PO token available, streaming without token");
 		}
 
 		args.push(info.url);
 
-		// Spawn yt-dlp to output the raw audio stream to stdout
-		const process = spawn(YTDLP_PATH, args, { stdio: ["ignore", "pipe", "ignore"] });
+		// Debug: log command and args (mask token in extractor-args)
+		const argsForLog = args.map((a) => {
+			if (a.startsWith("youtube:po_token=web.gvs+")) return "youtube:po_token=web.gvs+***";
+			return a;
+		});
+		console.log(`[yt-dlp] Stream spawn: ${YTDLP_PATH} ${argsForLog.join(" ")}`);
 
-		return process.stdout; // This is a Readable Stream that Discord can play
+		// Spawn yt-dlp to output the raw audio stream to stdout; pipe stderr for debugging
+		const proc = spawn(YTDLP_PATH, args, { stdio: ["ignore", "pipe", "pipe"] });
+
+		proc.stderr.on("data", (chunk) => {
+			const line = chunk.toString().trim();
+			if (line) console.log(`[yt-dlp stream stderr] ${line}`);
+		});
+
+		proc.on("error", (err) => {
+			console.error("[yt-dlp] Stream process spawn error:", err.message);
+		});
+
+		proc.on("close", (code, signal) => {
+			console.log(`[yt-dlp] Stream process exited code=${code} signal=${signal || "none"} url=${info.url}`);
+		});
+
+		let firstChunk = true;
+		proc.stdout.on("data", (chunk) => {
+			if (firstChunk) {
+				firstChunk = false;
+				console.log(`[yt-dlp] Stream: first data received (${chunk.length} bytes) for ${info.title}`);
+			}
+		});
+
+		return proc.stdout; // This is a Readable Stream that Discord can play
 	}
 }
 
