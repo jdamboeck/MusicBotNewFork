@@ -77,14 +77,76 @@ function registerCommands(client, player) {
 				}
 
 				const amount = parseInt(args[0]) || 100; // Default to 100 messages
-				const deleteCount = Math.min(Math.max(amount, 1), 100); // Clamp between 1 and 100
+				const deleteCount = Math.max(amount, 1); // Minimum 1, no upper limit
 
 				try {
-					// Bulk delete messages (only works for messages < 14 days old)
-					const deleted = await message.channel.bulkDelete(deleteCount, true);
-					const reply = await message.channel.send(`🗑️ Cleared ${deleted.size} messages.`);
+					const statusMsg = await message.channel.send(`🗑️ Clearing messages...`);
+					let totalDeleted = 0;
+					let remaining = deleteCount;
+
+					// 14 days in milliseconds
+					const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+
+					while (remaining > 0) {
+						// Fetch messages (max 100 per request)
+						const fetchCount = Math.min(remaining, 100);
+						const messages = await message.channel.messages.fetch({ limit: fetchCount });
+
+						if (messages.size === 0) break;
+
+						// Filter out the status message
+						const toDelete = messages.filter(m => m.id !== statusMsg.id);
+						if (toDelete.size === 0) break;
+
+						// Separate messages into recent (< 14 days) and old (>= 14 days)
+						const recentMessages = [];
+						const oldMessages = [];
+
+						for (const [id, msg] of toDelete) {
+							if (msg.createdTimestamp > fourteenDaysAgo) {
+								recentMessages.push(msg);
+							} else {
+								oldMessages.push(msg);
+							}
+						}
+
+						// Bulk delete recent messages (if more than 1)
+						if (recentMessages.length > 1) {
+							const deleted = await message.channel.bulkDelete(recentMessages, true);
+							totalDeleted += deleted.size;
+							remaining -= deleted.size;
+						} else if (recentMessages.length === 1) {
+							// Delete single recent message individually
+							await recentMessages[0].delete();
+							totalDeleted++;
+							remaining--;
+						}
+
+						// Delete old messages individually with rate limit handling
+						for (const msg of oldMessages) {
+							if (remaining <= 0) break;
+							try {
+								await msg.delete();
+								totalDeleted++;
+								remaining--;
+								// Small delay to avoid rate limits
+								await new Promise(resolve => setTimeout(resolve, 300));
+							} catch (e) {
+								// Skip if message already deleted
+								if (e.code !== 10008) console.error(`Failed to delete message: ${e.message}`);
+							}
+						}
+
+						// Update status periodically
+						await statusMsg.edit(`🗑️ Clearing messages... (${totalDeleted} deleted)`).catch(() => {});
+
+						// If we fetched fewer messages than requested, we've hit the end
+						if (messages.size < fetchCount) break;
+					}
+
+					await statusMsg.edit(`🗑️ Cleared ${totalDeleted} messages.`);
 					// Auto-delete the confirmation after 3 seconds
-					setTimeout(() => reply.delete().catch(() => {}), 3000);
+					setTimeout(() => statusMsg.delete().catch(() => {}), 3000);
 				} catch (e) {
 					console.error(e);
 					return message.reply(`Failed to clear messages: ${e.message}`);
