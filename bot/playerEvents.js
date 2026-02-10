@@ -1,6 +1,7 @@
 const { ActivityType } = require("discord-api-types/v10");
 const { setBotActivity, setVoiceChannelStatus, isYouTubeUrl, truncate } = require("./activity");
 const { tryPlaySoundboardSlot1, SOUNDBOARD_ICON_DURATION_MS } = require("./soundboard");
+const { recordPlay } = require("./database");
 
 /**
  * Register player event handlers.
@@ -20,6 +21,22 @@ function registerPlayerEvents(player, client) {
 		const channel = queue.channel;
 		const guild = channel?.guild;
 		console.log("[playerStart] track:", track?.title, "channel:", channel?.id ?? channel, "guild:", guild?.id ?? guild);
+
+		// Record the play in the database
+		const requestedBy = queue.metadata?.author;
+		if (requestedBy && guild && track) {
+			try {
+				recordPlay({
+					videoUrl: track.url,
+					videoTitle: track.title,
+					userId: requestedBy.id,
+					userName: requestedBy.username || requestedBy.tag,
+					guildId: guild.id,
+				});
+			} catch (err) {
+				console.error("[playerStart] Failed to record play:", err);
+			}
+		}
 
 		// 1) Set voice channel status to music icon first (status under the bot in the VC)
 		setVoiceChannelStatus(client, channel, "🎵 Finding the best audio quality");
