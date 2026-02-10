@@ -34,15 +34,15 @@ function registerPlayerEvents(player, client) {
 		const channelName = channel?.name ?? "voice";
 		const state = `to ${listeners} listener${listeners !== 1 ? "s" : ""} in #${channelName}`;
 		const isYoutube = isYouTubeUrl(track.url);
-		const trackTitle = truncate(track.title);
+		const trackTitle = "💥 Blasting " + truncate(track.title, 160);
 		const trackActivity = {
-			name: "💥 Blasting " + trackTitle,
+			name: trackTitle,
 			state,
 			type: isYoutube ? ActivityType.Streaming : ActivityType.Listening,
 			...(isYoutube && track.url && { url: track.url }),
 		};
 		setTimeout(() => {
-			setVoiceChannelStatus(client, channel,  "💥 Blasting " + trackTitle);
+			setVoiceChannelStatus(client, channel, trackTitle);
 			setBotActivity(client, trackActivity);
 			console.log("[playerStart] Set channel status and activity to track:", trackTitle);
 		}, SOUNDBOARD_ICON_DURATION_MS);
