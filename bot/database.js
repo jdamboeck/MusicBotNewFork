@@ -32,6 +32,22 @@ function initDatabase() {
 		CREATE INDEX IF NOT EXISTS idx_guild_id ON play_history(guild_id);
 	`);
 
+	// Create the track_comments table for storing user comments at specific timestamps
+	db.exec(`
+		CREATE TABLE IF NOT EXISTS track_comments (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			video_url TEXT NOT NULL,
+			guild_id TEXT NOT NULL,
+			user_id TEXT NOT NULL,
+			user_name TEXT NOT NULL,
+			comment_text TEXT NOT NULL,
+			timestamp_ms INTEGER NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_track_comments_video ON track_comments(video_url, guild_id);
+	`);
+
 	console.log("[Database] Initialized SQLite database at", DB_PATH);
 	return db;
 }
@@ -181,6 +197,82 @@ function clearMusicStats(guildId) {
 }
 
 /**
+ * Save a track comment with its timestamp.
+ * @param {Object} params
+ * @param {string} params.videoUrl - The URL of the video
+ * @param {string} params.guildId - Discord guild/server ID
+ * @param {string} params.userId - Discord user ID who commented
+ * @param {string} params.userName - Discord username
+ * @param {string} params.commentText - The comment text
+ * @param {number} params.timestampMs - Timestamp in milliseconds when the comment was made
+ */
+function saveTrackComment({ videoUrl, guildId, userId, userName, commentText, timestampMs }) {
+	if (!db) initDatabase();
+
+	const stmt = db.prepare(`
+		INSERT INTO track_comments (video_url, guild_id, user_id, user_name, comment_text, timestamp_ms)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`);
+
+	stmt.run(videoUrl, guildId, userId, userName, commentText, timestampMs);
+	console.log(`[Database] Saved track comment at ${timestampMs}ms by ${userName}: "${commentText.slice(0, 50)}..."`);
+}
+
+/**
+ * Get all comments for a track in a guild, sorted by timestamp.
+ * @param {string} videoUrl - The URL of the video
+ * @param {string} guildId - Discord guild ID
+ * @returns {Array<{id: number, user_id: string, user_name: string, comment_text: string, timestamp_ms: number, created_at: string}>}
+ */
+function getTrackComments(videoUrl, guildId) {
+	if (!db) initDatabase();
+
+	const stmt = db.prepare(`
+		SELECT id, user_id, user_name, comment_text, timestamp_ms, created_at
+		FROM track_comments
+		WHERE video_url = ? AND guild_id = ?
+		ORDER BY timestamp_ms ASC
+	`);
+
+	return stmt.all(videoUrl, guildId);
+}
+
+/**
+ * Clear all track comments for a guild.
+ * @param {string} guildId - Discord guild ID
+ * @returns {number} Number of records deleted
+ */
+function clearTrackComments(guildId) {
+	if (!db) initDatabase();
+
+	const stmt = db.prepare(`
+		DELETE FROM track_comments WHERE guild_id = ?
+	`);
+
+	const result = stmt.run(guildId);
+	console.log(`[Database] Cleared ${result.changes} track comments for guild ${guildId}`);
+	return result.changes;
+}
+
+/**
+ * Clear all track comments for a specific video in a guild.
+ * @param {string} videoUrl - The video URL
+ * @param {string} guildId - Discord guild ID
+ * @returns {number} Number of records deleted
+ */
+function clearVideoComments(videoUrl, guildId) {
+	if (!db) initDatabase();
+
+	const stmt = db.prepare(`
+		DELETE FROM track_comments WHERE video_url = ? AND guild_id = ?
+	`);
+
+	const result = stmt.run(videoUrl, guildId);
+	console.log(`[Database] Cleared ${result.changes} comments for video ${videoUrl} in guild ${guildId}`);
+	return result.changes;
+}
+
+/**
  * Close the database connection.
  */
 function closeDatabase() {
@@ -200,5 +292,9 @@ module.exports = {
 	getTotalPlays,
 	getUserTotalPlays,
 	clearMusicStats,
+	saveTrackComment,
+	getTrackComments,
+	clearTrackComments,
+	clearVideoComments,
 	closeDatabase,
 };

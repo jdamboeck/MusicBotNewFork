@@ -1,7 +1,8 @@
 const { MessageFlagsBitField } = require("discord.js");
 const { useQueue } = require("discord-player");
 const { setBotActivity, setVoiceChannelStatus } = require("./activity");
-const { getTopVideosOverall, getTopVideosByUser, getTopListeners, getTotalPlays, getUserTotalPlays, clearMusicStats } = require("./database");
+const { getTopVideosOverall, getTopVideosByUser, getTopListeners, getTotalPlays, getUserTotalPlays, clearMusicStats, clearTrackComments, clearVideoComments } = require("./database");
+const { getActiveSession } = require("./trackComments");
 
 const PREFIX = "#";
 
@@ -43,7 +44,16 @@ function registerCommands(client, player) {
 						},
 					});
 
-					return message.reply(`**${track.title}** enqueued!`);
+					// Send the enqueued message and store it in queue metadata for track comments
+					const enqueuedMessage = await message.reply(`**${track.title}** enqueued!`);
+
+					// Update queue metadata with the enqueued message for track comment tracking
+					const currentQueue = useQueue(message.guild.id);
+					if (currentQueue && currentQueue.metadata) {
+						currentQueue.metadata.enqueuedMessage = enqueuedMessage;
+					}
+
+					return enqueuedMessage;
 				} catch (e) {
 					console.error(e);
 					return message.reply(`Something went wrong: ${e.message}`);
@@ -230,6 +240,49 @@ function registerCommands(client, player) {
 				} catch (e) {
 					console.error(e);
 					return message.reply(`Failed to clear music stats: ${e.message}`);
+				}
+			}
+			case "clearvideos": {
+				// Check if user has administrator permission
+				if (!message.member.permissions.has("Administrator")) {
+					return message.reply("🛑 You need the 'Administrator' permission to use this command.");
+				}
+
+				const guildId = message.guild.id;
+
+				try {
+					const deletedCount = clearTrackComments(guildId);
+					return message.reply(`✅ Cleared ${deletedCount} track comment${deletedCount !== 1 ? "s" : ""} for this server.`);
+				} catch (e) {
+					console.error(e);
+					return message.reply(`Failed to clear track comments: ${e.message}`);
+				}
+			}
+			case "clearvideo": {
+				// Check if user has administrator permission
+				if (!message.member.permissions.has("Administrator")) {
+					return message.reply("🛑 You need the 'Administrator' permission to use this command.");
+				}
+
+				// Must be a reply to an enqueued message
+				if (!message.reference?.messageId) {
+					return message.reply("🛑 Reply to an enqueued message with `#clearvideo` to clear comments for that video.");
+				}
+
+				const guildId = message.guild.id;
+				const session = getActiveSession(guildId);
+
+				// Check if the reply is to the currently tracked message
+				if (!session || message.reference.messageId !== session.messageId) {
+					return message.reply("🛑 Reply to the currently playing track's enqueued message to clear its comments.");
+				}
+
+				try {
+					const deletedCount = clearVideoComments(session.trackUrl, guildId);
+					return message.reply(`✅ Cleared ${deletedCount} comment${deletedCount !== 1 ? "s" : ""} for this video.`);
+				} catch (e) {
+					console.error(e);
+					return message.reply(`Failed to clear video comments: ${e.message}`);
 				}
 			}
 		}

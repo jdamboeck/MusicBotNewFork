@@ -4,6 +4,7 @@ const { DefaultExtractors } = require("@discord-player/extractor");
 const { YtDlpExtractor } = require("./ytdlp-extractor");
 const { registerPlayerEvents } = require("./bot/playerEvents");
 const { registerCommands } = require("./bot/commands");
+const { handlePotentialReply } = require("./bot/trackComments");
 
 // Load bot token from environment or config
 let botToken = process.env.BOT_TOKEN;
@@ -44,6 +45,12 @@ const player = new Player(client, {
 // Register event handlers and commands
 registerPlayerEvents(player, client);
 registerCommands(client, player);
+
+// Register track comment reply listener
+client.on("messageCreate", (message) => {
+	// Handle potential replies to tracked "enqueued" messages
+	handlePotentialReply(message);
+});
 
 // Initialize extractors and login
 async function init() {

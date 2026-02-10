@@ -2,6 +2,7 @@ const { ActivityType } = require("discord-api-types/v10");
 const { setBotActivity, setVoiceChannelStatus, isYouTubeUrl, truncate } = require("./activity");
 const { tryPlaySoundboardSlot1, SOUNDBOARD_ICON_DURATION_MS } = require("./soundboard");
 const { recordPlay } = require("./database");
+const { startTrackingSession, stopTrackingSession, scheduleCommentPlayback } = require("./trackComments");
 
 /**
  * Register player event handlers.
@@ -38,6 +39,20 @@ function registerPlayerEvents(player, client) {
 			}
 		}
 
+		// Start track comment tracking if we have the enqueued message
+		const enqueuedMessage = queue.metadata?.enqueuedMessage;
+		if (enqueuedMessage && guild && track) {
+			try {
+				// Start tracking session for this playback
+				startTrackingSession(guild.id, enqueuedMessage, track.url);
+
+				// Schedule playback of any existing comments for this track
+				scheduleCommentPlayback(guild.id, enqueuedMessage, track.url);
+			} catch (err) {
+				console.error("[playerStart] Failed to setup track comments:", err);
+			}
+		}
+
 		// 1) Set voice channel status to music icon first (status under the bot in the VC)
 		setVoiceChannelStatus(client, channel, "🎵 Finding the best audio quality");
 		setBotActivity(client, { name: "🎵 Finding the best audio quality", type: ActivityType.Listening });
@@ -69,6 +84,12 @@ function registerPlayerEvents(player, client) {
 		setBotActivity(client, null);
 		// Clear voice channel status when queue is done (bot may still be in channel)
 		if (queue?.channel) setVoiceChannelStatus(client, queue.channel, "");
+
+		// Stop track comment tracking
+		const guildId = queue?.channel?.guild?.id;
+		if (guildId) {
+			stopTrackingSession(guildId);
+		}
 	});
 }
 
