@@ -1,5 +1,9 @@
 # zen-bot for Discord
 
+<p align="center">
+  <img src="assets/logo.svg" alt="zen-bot logo" width="128" />
+</p>
+
 An expandable and zen approach to Discord bots.
 
 Built with a feature-based architecture that keeps things simple: **automatism over configuration, minimalism over complexity**.
