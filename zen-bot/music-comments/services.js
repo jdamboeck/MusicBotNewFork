@@ -2,15 +2,19 @@
  * Track comments services - session management and comment scheduling.
  */
 
+const { ThreadAutoArchiveDuration } = require("discord.js");
 const { createLogger } = require("../core/logger");
 
 const log = createLogger("music-comments");
 
 /**
  * Active tracking sessions per guild.
- * Map<guildId, { messageId, trackUrl, startTime, channelId, message, scheduledTimeouts }>
+ * Map<guildId, { messageId, trackUrl, startTime, channelId, message, threadChannel?, scheduledTimeouts }>
  */
 const activeSessions = new Map();
+
+/** Thread name for comments/reactions playback (Discord limit 100 chars). */
+const PLAYBACK_THREAD_NAME = "Comments";
 
 /**
  * Maximum comment text length before truncation (not applied to URLs).
@@ -48,13 +52,15 @@ function truncateText(text, maxLength = MAX_COMMENT_LENGTH) {
 
 /**
  * Start tracking a session for reply monitoring.
+ * @param {string} [trackTitle] - Track title for the reactions headline
  */
-function startTrackingSession(guildId, message, trackUrl) {
+function startTrackingSession(guildId, message, trackUrl, trackTitle = "") {
 	stopTrackingSession(guildId);
 
 	const session = {
 		messageId: message.id,
 		trackUrl,
+		trackTitle: trackTitle || "",
 		startTime: Date.now(),
 		channelId: message.channel.id,
 		message,
@@ -85,6 +91,48 @@ function stopTrackingSession(guildId) {
  */
 function getActiveSession(guildId) {
 	return activeSessions.get(guildId);
+}
+
+/**
+ * Create a thread from the enqueued message for playback when there are comments or reactions.
+ * Stores the thread in session.threadChannel; playback will send to the thread.
+ * @param {string} guildId
+ * @param {import("discord.js").Message} message - Enqueued message
+ * @param {string} trackUrl
+ * @param {object} ctx
+ * @returns {Promise<import("discord.js").ThreadChannel|null>} The thread channel or null
+ */
+async function ensurePlaybackThread(guildId, message, trackUrl, ctx) {
+	const session = activeSessions.get(guildId);
+	if (!session) return null;
+
+	const comments = ctx.db.music.getTrackComments(trackUrl, guildId);
+	const reactions = ctx.db.music.getTrackReactions(trackUrl, guildId);
+	if (comments.length === 0 && reactions.length === 0) return null;
+
+	try {
+		// When a thread already exists on this message (e.g. from a previous play), use it (thread id === message id)
+		if (message.hasThread) {
+			const existing = message.channel.threads.cache.get(message.id) ?? await message.channel.threads.fetch(message.id).catch(() => null);
+			if (existing) {
+				session.threadChannel = existing;
+				log.debug("Using existing thread for playback:", existing.id);
+				return existing;
+			}
+		}
+		const thread = await message.startThread({
+			name: PLAYBACK_THREAD_NAME,
+			autoArchiveDuration: ThreadAutoArchiveDuration.OneHour,
+			reason: "Comments and reactions playback",
+		});
+		session.threadChannel = thread;
+		log.info("Created playback thread for guild " + guildId + ": " + thread.name);
+		return thread;
+	} catch (err) {
+		log.warn("Could not create playback thread, using channel:", err.message);
+		session.threadChannel = null;
+		return null;
+	}
 }
 
 const REACTION_BIG_REPEAT = 3;
@@ -185,8 +233,10 @@ function scheduleReactionPlayback(guildId, message, trackUrl, ctx) {
 }
 
 /**
- * Schedule both comments and reactions in a single timeline, so they play back in sync order by timestamp.
- * Comments and reactions at the same timestamp are ordered: comments first, then reactions.
+ * Schedule both comments and reactions in a single timeline.
+ * Each reaction line: "EMOJI EMOJI  USERNAME  EMOJI EMOJI" (username in ALL CAPS), at its timestamp.
+ * A blank line (vertical space) is sent after every played-back message for separation.
+ * Recorded reactions are also added as real reactions on the enqueued message.
  */
 function scheduleCommentAndReactionPlayback(guildId, message, trackUrl, ctx) {
 	const session = activeSessions.get(guildId);
@@ -194,6 +244,7 @@ function scheduleCommentAndReactionPlayback(guildId, message, trackUrl, ctx) {
 
 	const comments = ctx.db.music.getTrackComments(trackUrl, guildId);
 	const reactions = ctx.db.music.getTrackReactions(trackUrl, guildId);
+
 	const items = [
 		...comments.map((c) => ({ type: "comment", timestamp_ms: c.timestamp_ms, data: c })),
 		...reactions.map((r) => ({ type: "reaction", timestamp_ms: r.timestamp_ms, data: r })),
@@ -204,7 +255,25 @@ function scheduleCommentAndReactionPlayback(guildId, message, trackUrl, ctx) {
 		return;
 	}
 
-	log.info(`Scheduling ${comments.length} comments and ${reactions.length} reactions for playback (${items.length} total)`);
+	const playbackTarget = session.threadChannel || message.channel;
+	const verticalSpace = "\u200B"; // zero-width space: blank message for vertical gap
+
+	// Headline: bigger/bolder text with vertical spacers above and below (Discord: bold + caps)
+	const REACTIONS_ICON = "⚡";
+	const trackTitleDisplay = (session.trackTitle || "Track").trim().replace(/\s*:\s*$/, "") || "Track";
+	const headline = `**${REACTIONS_ICON} REACTIONS TO ${trackTitleDisplay.toUpperCase()}:**`;
+
+	(async () => {
+		try {
+			await playbackTarget.send(verticalSpace);
+			await playbackTarget.send(headline);
+			await playbackTarget.send(verticalSpace);
+		} catch (err) {
+			log.warn("Failed to send reactions headline:", err.message);
+		}
+	})();
+
+	log.info(`Scheduling ${comments.length} comments and ${reactions.length} reactions → ${session.threadChannel ? "thread" : "channel"}`);
 
 	for (const item of items) {
 		const delay = item.timestamp_ms;
@@ -224,13 +293,18 @@ function scheduleCommentAndReactionPlayback(guildId, message, trackUrl, ctx) {
 					let commentMessage = `💬 **${comment.user_name}:**`;
 					if (textParts.length > 0) commentMessage += ` ${truncateText(textParts.join(" "))}`;
 					if (urlParts.length > 0) commentMessage += "\n" + urlParts.join("\n");
-					await message.channel.send(commentMessage);
+					await playbackTarget.send(commentMessage);
+					await playbackTarget.send(verticalSpace);
 					log.debug(`Displayed comment at ${delay}ms: ${comment.user_name}`);
 				} else {
+					// Reaction line: EMOJI EMOJI  USERNAME  EMOJI EMOJI (username in ALL CAPS)
 					const reaction = item.data;
 					const emoji = reaction.reaction_emoji;
-					const bigEmoji = (emoji + " ").repeat(REACTION_BIG_REPEAT).trim();
-					await message.channel.send(`**${reaction.user_name}:**\n\n${bigEmoji}`);
+					const usernameCaps = (reaction.user_name || "").toUpperCase();
+					const line = `${emoji} ${emoji}  ${usernameCaps}  ${emoji} ${emoji}`;
+					await playbackTarget.send(line);
+					await playbackTarget.send(verticalSpace);
+					await message.react(emoji).catch((e) => log.debug("Could not add reaction to enqueued message:", e.message));
 					log.debug(`Displayed reaction at ${delay}ms: ${reaction.user_name} ${emoji}`);
 				}
 			} catch (err) {
@@ -359,6 +433,7 @@ module.exports = {
 	startTrackingSession,
 	stopTrackingSession,
 	getActiveSession,
+	ensurePlaybackThread,
 	scheduleCommentPlayback,
 	scheduleReactionPlayback,
 	scheduleCommentAndReactionPlayback,
