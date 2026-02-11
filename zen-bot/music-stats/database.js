@@ -199,6 +199,22 @@ function initMusicDatabase(db) {
 		},
 
 		/**
+		 * Get the last played video in a guild.
+		 * @param {string} guildId - Guild ID
+		 * @returns {{video_url: string, video_title: string, played_at: string}|null}
+		 */
+		getLastPlayedVideo(guildId) {
+			const stmt = db.prepare(`
+				SELECT video_url, video_title, played_at
+				FROM play_history
+				WHERE guild_id = ?
+				ORDER BY played_at DESC
+				LIMIT 1
+			`);
+			return stmt.get(guildId) || null;
+		},
+
+		/**
 		 * Clear all music stats for a guild.
 		 * @param {string} guildId - Guild ID
 		 * @returns {number} Number of deleted records

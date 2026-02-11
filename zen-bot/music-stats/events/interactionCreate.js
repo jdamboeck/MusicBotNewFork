@@ -7,16 +7,52 @@ const playButtonStore = require("../playButtonStore");
 
 const log = createLogger("music-stats");
 
-const PREFIX = "musicstats_play_";
+const PREFIX_PLAY = "musicstats_play_";
+const CUSTOM_ID_STOP = "musicstats_stop";
 
 module.exports = {
 	event: "interactionCreate",
 	target: "client",
 
 	async handle(interaction, ctx) {
-		if (!interaction.isButton() || !interaction.customId.startsWith(PREFIX)) return false;
+		if (!interaction.isButton()) return false;
 
-		const indexStr = interaction.customId.slice(PREFIX.length);
+		// Handle stop button
+		if (interaction.customId === CUSTOM_ID_STOP) {
+			// Defer so we have time to run stop (Discord 3s limit)
+			await interaction.deferReply().catch(() => {});
+
+			// Adapter: message.reply() -> interaction.editReply() (we already deferred)
+			const messageLike = {
+				reply(contentOrOptions) {
+					const content = typeof contentOrOptions === "string" ? contentOrOptions : (contentOrOptions?.content ?? "");
+					return interaction.editReply(content);
+				},
+				author: interaction.user,
+				guild: interaction.guild,
+				member: interaction.member,
+			};
+
+			const stopCmd = ctx.commands.get("stop");
+			if (!stopCmd) {
+				await interaction.editReply("Stop command not available.").catch(() => {});
+				return true;
+			}
+
+			try {
+				await stopCmd.execute(messageLike, [], ctx);
+			} catch (err) {
+				log.error("Musicstats stop button failed:", err);
+				await interaction.editReply(`Something went wrong: ${err.message}`).catch(() => {});
+			}
+
+			return true;
+		}
+
+		// Handle play buttons
+		if (!interaction.customId.startsWith(PREFIX_PLAY)) return false;
+
+		const indexStr = interaction.customId.slice(PREFIX_PLAY.length);
 		const index = parseInt(indexStr, 10);
 		if (Number.isNaN(index) || index < 0) return false;
 
