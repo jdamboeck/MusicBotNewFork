@@ -1,32 +1,30 @@
 /**
  * Musicstats command - shows play statistics.
- * Video list: only clickable buttons (no line above); below each button a bold plays line.
+ * Uses Discord v2 display components (Container, TextDisplay, Section, Separator).
  */
 
-const { MessageFlagsBitField, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const {
+	MessageFlags,
+	TextDisplayBuilder,
+	SectionBuilder,
+	ContainerBuilder,
+	SeparatorBuilder,
+	SeparatorSpacingSize,
+	ButtonBuilder,
+	ButtonStyle,
+} = require("discord.js");
 const { createLogger } = require("../../core/logger");
 const playButtonStore = require("../playButtonStore");
 
 const log = createLogger("musicstats");
 
-const PLAY_ICON = "▶️";
+const PLAY_ICON = "▶️ ";
 
-/** Mathematical bold Unicode block: 0-9 → U+1D7CE–1D7D7, A-Z → U+1D400–1D419, a-z → U+1D41A–1D433. */
-const BOLD_DIGIT_0 = 0x1d7ce;
-const BOLD_A = 0x1d400;
-const BOLD_A_LOWER = 0x1d41a;
+/** Discord button label max length. */
+const BUTTON_LABEL_MAX = 7;
 
-function toBoldUnicode(str) {
-	let out = "";
-	for (const c of str) {
-		const code = c.codePointAt(0);
-		if (code >= 0x30 && code <= 0x39) out += String.fromCodePoint(BOLD_DIGIT_0 + (code - 0x30));
-		else if (code >= 0x41 && code <= 0x5a) out += String.fromCodePoint(BOLD_A + (code - 0x41));
-		else if (code >= 0x61 && code <= 0x7a) out += String.fromCodePoint(BOLD_A_LOWER + (code - 0x61));
-		else out += c;
-	}
-	return out;
-}
+/** Title length in button (with leading space + "▶️ N. " prefix we stay under 80). */
+const BUTTON_TITLE_LENGTH = 55;
 
 /**
  * Truncate a title to a maximum length.
@@ -36,48 +34,33 @@ function truncateTitle(title, maxLength) {
 	return title.slice(0, maxLength - 3) + "...";
 }
 
-/** Discord button label max length. */
-const BUTTON_LABEL_MAX = 80;
-
-/** Title length in button (with leading space + "▶️ N. " prefix we stay under 80). */
-const BUTTON_TITLE_LENGTH = 70;
-
 /**
- * One play button (index 0) for a single-line message; store resolves URL by message id.
- * Label: leading space, number, bold title (Unicode).
+ * Build Section components for video entries.
+ * Each Section has a TextDisplay with play count and a Button accessory.
+ * @param {Array} entries - Video entries with video_title, video_url, play_count
+ * @param {number} startIndex - Starting index for button customId
+ * @returns {Array} Array of SectionBuilder components
  */
-function buildSinglePlayButton(label) {
-	const safeLabel = label.length > BUTTON_LABEL_MAX ? label.slice(0, BUTTON_LABEL_MAX - 3) + "..." : label;
-	return [
-		new ActionRowBuilder().addComponents(
-			new ButtonBuilder()
-				.setCustomId("musicstats_play_0")
-				.setLabel(safeLabel)
-				.setStyle(ButtonStyle.Secondary),
-		),
-	];
-}
-
-/**
- * Send one message per video: button only (no line above), then a line below with bold plays.
- */
-async function sendVideoLines(channel, entries, flags, delayMs = 150) {
+function buildVideoSections(entries, startIndex) {
+	const sections = [];
 	for (let i = 0; i < entries.length; i++) {
 		const entry = entries[i];
-		const titleBold = toBoldUnicode(truncateTitle(entry.video_title, BUTTON_TITLE_LENGTH));
-		const buttonLabel = ` ${PLAY_ICON} ${i + 1}. ${titleBold}`;
-		const sent = await channel.send({
-			content: "\u200B",
-			flags,
-			components: buildSinglePlayButton(buttonLabel),
-		});
-		playButtonStore.set(sent.id, [entry.video_url]);
+		const title = truncateTitle(entry.video_title, BUTTON_TITLE_LENGTH);
+		const buttonLabel = ` ${PLAY_ICON} ${startIndex + i + 1}. ${title}`;
+		const safeLabel = buttonLabel.length > BUTTON_LABEL_MAX ? buttonLabel.slice(0, BUTTON_LABEL_MAX - 3) + "..." : buttonLabel;
 		const playsText = entry.play_count === 1 ? "1 play" : `${entry.play_count} plays`;
-		await channel.send({ content: `**${playsText}**`, flags });
-		if (delayMs > 0 && i < entries.length - 1) {
-			await new Promise((r) => setTimeout(r, delayMs));
-		}
+
+		const section = new SectionBuilder()
+			.addTextDisplayComponents((textDisplay) => textDisplay.setContent(`**${playsText}**`))
+			.setButtonAccessory((button) =>
+				button
+					.setCustomId(`musicstats_play_${startIndex + i}`)
+					.setLabel(safeLabel)
+					.setStyle(ButtonStyle.Secondary),
+			);
+		sections.push(section);
 	}
+	return sections;
 }
 
 module.exports = {
@@ -98,46 +81,77 @@ module.exports = {
 			const totalPlays = music.getTotalPlays(guildId);
 			const userTotalPlays = music.getUserTotalPlays(guildId, userId);
 
-			const flags = MessageFlagsBitField.Flags.SuppressEmbeds;
+			// Build Container with all components
+			const container = new ContainerBuilder().setAccentColor(0x0099ff);
 
-			// Single intro message: header, stats, top listeners, no video list
-			let response = "📊 **Music Stats**\n\n";
-			response += `**Total plays on this server:** ${totalPlays}\n`;
-			response += `**Your total plays:** ${userTotalPlays}\n\n`;
-			response += "👂 **Top 10 Listeners (Server)**\n";
+			// Header
+			container.addTextDisplayComponents((textDisplay) => textDisplay.setContent("📊 **Music Stats**"));
+
+			// Stats
+			container.addTextDisplayComponents((textDisplay) =>
+				textDisplay.setContent(`**Total plays on this server:** ${totalPlays}\n**Your total plays:** ${userTotalPlays}`),
+			);
+
+			// Separator
+			container.addSeparatorComponents((separator) => separator.setSpacing(SeparatorSpacingSize.Small));
+
+			// Top Listeners section
+			container.addTextDisplayComponents((textDisplay) => textDisplay.setContent("👂 **Top 10 Listeners (Server)**"));
+
 			if (topListeners.length === 0) {
-				response += "_No plays recorded yet!_\n";
+				container.addTextDisplayComponents((textDisplay) => textDisplay.setContent("_No plays recorded yet!_"));
 			} else {
-				topListeners.forEach((entry, index) => {
-					response += `${index + 1}. **${entry.user_name}** — ${entry.play_count} play${entry.play_count !== 1 ? "s" : ""}\n`;
-				});
+				const listenersText = topListeners
+					.map((entry, index) => {
+						const plays = entry.play_count === 1 ? "play" : "plays";
+						return `${index + 1}. **${entry.user_name}** — ${entry.play_count} ${plays}`;
+					})
+					.join("\n");
+				container.addTextDisplayComponents((textDisplay) => textDisplay.setContent(listenersText));
 			}
 
-			const first = await message.reply({ content: response, flags });
+			// Separator
+			container.addSeparatorComponents((separator) => separator.setSpacing(SeparatorSpacingSize.Small));
 
-			// Section: only clickable buttons, then a bold plays line below each (no line above button)
+			// Top Overall section
+			container.addTextDisplayComponents((textDisplay) => textDisplay.setContent("🏆 **Top 10 Most Played (Server)**"));
+
 			if (topOverall.length > 0) {
-				await first.channel.send({ content: "🏆 **Top 10 Most Played (Server)**", flags });
-				await sendVideoLines(first.channel, topOverall, flags);
+				const videoSections = buildVideoSections(topOverall, 0);
+				container.addSectionComponents(...videoSections);
 			} else {
-				await first.channel.send({
-					content: "🏆 **Top 10 Most Played (Server)**\n_No plays recorded yet!_",
-					flags,
-				});
+				container.addTextDisplayComponents((textDisplay) => textDisplay.setContent("_No plays recorded yet!_"));
 			}
+
+			// Separator
+			container.addSeparatorComponents((separator) => separator.setSpacing(SeparatorSpacingSize.Small));
+
+			// Top By User section
+			container.addTextDisplayComponents((textDisplay) => textDisplay.setContent("🎵 **Your Top 10 Most Played**"));
 
 			if (topByUser.length > 0) {
-				await first.channel.send({ content: "🎵 **Your Top 10 Most Played**", flags });
-				await sendVideoLines(first.channel, topByUser, flags);
+				const userVideoSections = buildVideoSections(topByUser, topOverall.length);
+				container.addSectionComponents(...userVideoSections);
 			} else {
-				await first.channel.send({
-					content: "🎵 **Your Top 10 Most Played**\n_You haven't played anything yet!_",
-					flags,
-				});
+				container.addTextDisplayComponents((textDisplay) => textDisplay.setContent("_You haven't played anything yet!_"));
+			}
+
+			// Collect all video URLs in order for playButtonStore
+			const allVideoUrls = [...topOverall.map((e) => e.video_url), ...topByUser.map((e) => e.video_url)];
+
+			// Send single message with Container
+			const sent = await message.reply({
+				components: [container],
+				flags: MessageFlags.IsComponentsV2,
+			});
+
+			// Store all video URLs for button interactions
+			if (allVideoUrls.length > 0) {
+				playButtonStore.set(sent.id, allVideoUrls);
 			}
 
 			log.info("Musicstats sent (guild:", guildId, "totalPlays:", totalPlays, ")");
-			return first;
+			return sent;
 		} catch (e) {
 			log.error("Failed to get music stats:", e);
 			return message.reply(`Failed to get music stats: ${e.message}`);
