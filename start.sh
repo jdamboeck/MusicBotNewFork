@@ -11,10 +11,10 @@ echo "Waiting 5 seconds for provider to initialize..."
 sleep 5
 
 echo ""
-echo "Starting Music Bot..."
+echo "Starting zen-bot..."
 node main.js
 
-# When the bot stops, also stop the PO provider
+# When zen-bot stops, also stop the PO provider
 echo ""
 echo "Stopping PO Token Provider..."
 kill $PO_PROVIDER_PID 2>/dev/null
