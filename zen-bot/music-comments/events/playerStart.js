@@ -20,13 +20,10 @@ module.exports = {
 			try {
 				log.debug("Player start: starting comment tracking (guild:", guild.id, "track:", track.url?.slice(0, 40), "...)");
 				// Start tracking session for this playback
-				services.startTrackingSession(guild.id, enqueuedMessage, track.url, track.title);
+				services.startTrackingSession(guild.id, enqueuedMessage, track.url);
 
-				// Create a thread from the enqueued message for playback when there are comments/reactions
-				await services.ensurePlaybackThread(guild.id, enqueuedMessage, track.url, ctx);
-
-				// Schedule playback of comments and reactions in sync (single timeline by timestamp)
-				services.scheduleCommentAndReactionPlayback(guild.id, enqueuedMessage, track.url, ctx);
+				// Schedule playback of any existing comments for this track
+				services.scheduleCommentPlayback(guild.id, enqueuedMessage, track.url, ctx);
 			} catch (err) {
 				log.error("Failed to setup track comments:", err);
 			}

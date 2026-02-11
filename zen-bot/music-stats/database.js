@@ -61,22 +61,6 @@ function initMusicDatabase(db) {
 		CREATE INDEX IF NOT EXISTS idx_track_comments_video ON track_comments(video_url, guild_id);
 	`);
 
-	// Create the track_reactions table (reactions on enqueued message, synced playback)
-	db.exec(`
-		CREATE TABLE IF NOT EXISTS track_reactions (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			video_url TEXT NOT NULL,
-			guild_id TEXT NOT NULL,
-			user_id TEXT NOT NULL,
-			user_name TEXT NOT NULL,
-			reaction_emoji TEXT NOT NULL,
-			timestamp_ms INTEGER NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		);
-
-		CREATE INDEX IF NOT EXISTS idx_track_reactions_video ON track_reactions(video_url, guild_id);
-	`);
-
 	log.info("Music database tables initialized");
 
 	// ─────────────────────────────────────────────────────────────────────────
@@ -199,22 +183,6 @@ function initMusicDatabase(db) {
 		},
 
 		/**
-		 * Get the last played video in a guild.
-		 * @param {string} guildId - Guild ID
-		 * @returns {{video_url: string, video_title: string, played_at: string}|null}
-		 */
-		getLastPlayedVideo(guildId) {
-			const stmt = db.prepare(`
-				SELECT video_url, video_title, played_at
-				FROM play_history
-				WHERE guild_id = ?
-				ORDER BY played_at DESC
-				LIMIT 1
-			`);
-			return stmt.get(guildId) || null;
-		},
-
-		/**
 		 * Clear all music stats for a guild.
 		 * @param {string} guildId - Guild ID
 		 * @returns {number} Number of deleted records
@@ -293,59 +261,6 @@ function initMusicDatabase(db) {
 			`);
 			const result = stmt.run(videoUrl, guildId);
 			log.info(`Cleared ${result.changes} comments for video in guild ${guildId}`);
-			return result.changes;
-		},
-
-		// ───────────────────────────────────────────────────────────────────────
-		// TRACK REACTIONS
-		// ───────────────────────────────────────────────────────────────────────
-
-		/**
-		 * Save a track reaction (on enqueued message) with its timestamp.
-		 */
-		saveTrackReaction({ videoUrl, guildId, userId, userName, reactionEmoji, timestampMs }) {
-			const stmt = db.prepare(`
-				INSERT INTO track_reactions (video_url, guild_id, user_id, user_name, reaction_emoji, timestamp_ms)
-				VALUES (?, ?, ?, ?, ?, ?)
-			`);
-			stmt.run(videoUrl, guildId, userId, userName, reactionEmoji, timestampMs);
-			log.debug(`Saved track reaction at ${timestampMs}ms by ${userName}: ${reactionEmoji}`);
-		},
-
-		/**
-		 * Get all reactions for a track in a guild, sorted by timestamp.
-		 */
-		getTrackReactions(videoUrl, guildId) {
-			const stmt = db.prepare(`
-				SELECT id, user_id, user_name, reaction_emoji, timestamp_ms, created_at
-				FROM track_reactions
-				WHERE video_url = ? AND guild_id = ?
-				ORDER BY timestamp_ms ASC
-			`);
-			return stmt.all(videoUrl, guildId);
-		},
-
-		/**
-		 * Clear all track reactions for a guild.
-		 */
-		clearTrackReactions(guildId) {
-			const stmt = db.prepare(`
-				DELETE FROM track_reactions WHERE guild_id = ?
-			`);
-			const result = stmt.run(guildId);
-			log.info(`Cleared ${result.changes} track reactions for guild ${guildId}`);
-			return result.changes;
-		},
-
-		/**
-		 * Clear all track reactions for a specific video in a guild.
-		 */
-		clearVideoReactions(videoUrl, guildId) {
-			const stmt = db.prepare(`
-				DELETE FROM track_reactions WHERE video_url = ? AND guild_id = ?
-			`);
-			const result = stmt.run(videoUrl, guildId);
-			log.info(`Cleared ${result.changes} reactions for video in guild ${guildId}`);
 			return result.changes;
 		},
 	};

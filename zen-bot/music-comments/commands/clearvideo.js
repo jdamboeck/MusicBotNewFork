@@ -29,19 +29,14 @@ module.exports = {
 			return message.reply("🛑 Reply to the currently playing track's enqueued message to clear its comments.");
 		}
 
-		log.info("Clearing comments and reactions for video (guild:", guildId, "url:", session.trackUrl?.slice(0, 50), "...)");
+		log.info("Clearing comments for video (guild:", guildId, "url:", session.trackUrl?.slice(0, 50), "...)");
 		try {
-			const commentsDeleted = ctx.db.music.clearVideoComments(session.trackUrl, guildId);
-			const reactionsDeleted = ctx.db.music.clearVideoReactions(session.trackUrl, guildId);
-			log.info("Cleared", commentsDeleted, "comments and", reactionsDeleted, "reactions for video (guild:", guildId, ")");
-			const parts = [];
-			if (commentsDeleted) parts.push(`${commentsDeleted} comment${commentsDeleted !== 1 ? "s" : ""}`);
-			if (reactionsDeleted) parts.push(`${reactionsDeleted} reaction${reactionsDeleted !== 1 ? "s" : ""}`);
-			const msg = parts.length ? `✅ Cleared ${parts.join(" and ")} for this video.` : "✅ No comments or reactions to clear for this video.";
-			return message.reply(msg);
+			const deletedCount = ctx.db.music.clearVideoComments(session.trackUrl, guildId);
+			log.info("Cleared", deletedCount, "comments for video (guild:", guildId, ")");
+			return message.reply(`✅ Cleared ${deletedCount} comment${deletedCount !== 1 ? "s" : ""} for this video.`);
 		} catch (e) {
-			log.error("Failed to clear video comments/reactions:", e);
-			return message.reply(`Failed to clear: ${e.message}`);
+			log.error("Failed to clear video comments:", e);
+			return message.reply(`Failed to clear video comments: ${e.message}`);
 		}
 	},
 };

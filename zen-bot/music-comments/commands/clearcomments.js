@@ -21,17 +21,12 @@ module.exports = {
 		log.info("Clearing all track comments for guild:", guildId);
 
 		try {
-			const commentsDeleted = ctx.db.music.clearTrackComments(guildId);
-			const reactionsDeleted = ctx.db.music.clearTrackReactions(guildId);
-			log.info("Cleared", commentsDeleted, "comments and", reactionsDeleted, "reactions for guild:", guildId, ")");
-			const parts = [];
-			if (commentsDeleted) parts.push(`${commentsDeleted} comment${commentsDeleted !== 1 ? "s" : ""}`);
-			if (reactionsDeleted) parts.push(`${reactionsDeleted} reaction${reactionsDeleted !== 1 ? "s" : ""}`);
-			const msg = parts.length ? `✅ Cleared ${parts.join(" and ")} for this server.` : "✅ No track comments or reactions to clear.";
-			return message.reply(msg);
+			const deletedCount = ctx.db.music.clearTrackComments(guildId);
+			log.info("Cleared", deletedCount, "track comments (guild:", guildId, ")");
+			return message.reply(`✅ Cleared ${deletedCount} track comment${deletedCount !== 1 ? "s" : ""} for this server.`);
 		} catch (e) {
-			log.error("Failed to clear track comments/reactions:", e);
-			return message.reply(`Failed to clear: ${e.message}`);
+			log.error("Failed to clear track comments:", e);
+			return message.reply(`Failed to clear track comments: ${e.message}`);
 		}
 	},
 };

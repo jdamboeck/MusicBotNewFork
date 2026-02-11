@@ -26,7 +26,6 @@ async function init(ctx) {
 			GatewayIntentBits.Guilds,
 			GatewayIntentBits.GuildVoiceStates,
 			GatewayIntentBits.GuildMessages,
-			GatewayIntentBits.GuildMessageReactions,
 			GatewayIntentBits.MessageContent,
 		],
 	});
