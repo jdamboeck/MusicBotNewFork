@@ -18,6 +18,7 @@ const log = createLogger("core");
  */
 async function init(ctx) {
 	log.info("Initializing core...");
+	log.debug("Config: prefix =", config.prefix);
 
 	// Create Discord client
 	ctx.client = new Client({

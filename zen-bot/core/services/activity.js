@@ -26,10 +26,12 @@ function truncate(str, max = MAX_ACTIVITY_LEN) {
 function setBotActivity(client, activityOrName) {
 	if (!client.user) return;
 	if (!activityOrName) {
+		log.debug("Activity cleared");
 		client.user.setActivity(null);
 		return;
 	}
 	if (typeof activityOrName === "string") {
+		log.debug("Activity set:", truncate(activityOrName));
 		client.user.setActivity(truncate(activityOrName));
 		return;
 	}
@@ -38,6 +40,7 @@ function setBotActivity(client, activityOrName) {
 	const state = activityOrName.state != null ? truncate(String(activityOrName.state)) : undefined;
 	const opts = { type: activityOrName.type ?? ActivityType.Playing, state };
 	if (activityOrName.url) opts.url = activityOrName.url;
+	log.debug("Activity set:", name, state ? `(${state})` : "");
 	client.user.setActivity(name, opts);
 }
 

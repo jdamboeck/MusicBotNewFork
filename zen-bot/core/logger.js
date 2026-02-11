@@ -1,11 +1,11 @@
 /**
  * Simple logger factory - no dependencies, no config files.
  * Usage: const log = require('./logger'); log.info('message');
- * Control via LOG_LEVEL env var: debug, info, warn, error (default: info)
+ * Control via LOG_LEVEL env var: debug, info, warn, error (default: debug)
  */
 
 const LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 };
-const currentLevel = LOG_LEVELS[process.env.LOG_LEVEL?.toLowerCase()] ?? LOG_LEVELS.info;
+const currentLevel = LOG_LEVELS[process.env.LOG_LEVEL?.toLowerCase()] ?? LOG_LEVELS.debug;
 
 /**
  * Create a logger with a name prefix.

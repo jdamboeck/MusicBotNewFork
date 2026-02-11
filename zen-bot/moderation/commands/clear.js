@@ -13,16 +13,19 @@ module.exports = {
 	async execute(message, args, ctx) {
 		// Check if user has permission to manage messages
 		if (!message.member.permissionsIn(message.channel).has("ManageMessages")) {
+			log.debug("Clear refused: user lacks ManageMessages (guild:", message.guild.id, ")");
 			return message.reply("🛑 You need the 'Manage Messages' permission to use this command.");
 		}
 
 		// Check if bot has permission to manage messages
 		if (!message.guild.members.me.permissionsIn(message.channel).has("ManageMessages")) {
+			log.debug("Clear refused: bot lacks ManageMessages in channel (guild:", message.guild.id, ")");
 			return message.reply("🛑 I don't have permission to delete messages in this channel.");
 		}
 
 		const amount = parseInt(args[0]) || 100;
 		const deleteCount = Math.max(amount, 1);
+		log.info("Clear requested: up to", deleteCount, "messages in channel", message.channel.id, "(guild:", message.guild.id, ")");
 
 		try {
 			const statusMsg = await message.channel.send(`🗑️ Clearing messages...`);
@@ -86,6 +89,7 @@ module.exports = {
 				if (messages.size < fetchCount) break;
 			}
 
+			log.info("Clear completed: deleted", totalDeleted, "messages (channel:", message.channel.id, "guild:", message.guild.id, ")");
 			await statusMsg.edit(`🗑️ Cleared ${totalDeleted} messages.`);
 			// Auto-delete the confirmation after 3 seconds
 			setTimeout(() => statusMsg.delete().catch(() => {}), 3000);

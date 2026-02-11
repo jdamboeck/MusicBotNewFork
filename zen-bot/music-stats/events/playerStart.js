@@ -17,6 +17,7 @@ module.exports = {
 
 		if (requestedBy && guild && track) {
 			try {
+				log.debug("Recording play (guild:", guild.id, "title:", track.title?.slice(0, 40), "user:", requestedBy.username, ")");
 				ctx.db.music.recordPlay({
 					videoUrl: track.url,
 					videoTitle: track.title,

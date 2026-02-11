@@ -16,11 +16,13 @@ module.exports = {
 		log.info(`Attempting to play: ${query}`);
 
 		if (!query) {
+			log.debug("Play called without query");
 			return message.reply("🛑 Link missing");
 		}
 
 		const channel = message.member.voice.channel;
 		if (!channel) {
+			log.debug("Play refused: user not in voice channel");
 			return message.reply("You need to be in a voice channel!");
 		}
 
@@ -46,6 +48,7 @@ module.exports = {
 				queue.metadata.enqueuedMessage = enqueuedMessage;
 			}
 
+			log.info("Enqueued:", track.title, "| guild:", message.guild.id);
 			return enqueuedMessage;
 		} catch (e) {
 			log.error("Play failed:", e);

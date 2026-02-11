@@ -11,6 +11,8 @@ module.exports = {
 	target: "player",
 
 	async handle(queue, error, ctx) {
-		log.error("Audio player error:", error.message);
+		const guildId = queue?.guild?.id ?? "unknown";
+		log.error("Audio player error (guild:", guildId, "):", error.message);
+		log.debug("Player error details:", error);
 	},
 };

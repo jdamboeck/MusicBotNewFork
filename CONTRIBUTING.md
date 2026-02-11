@@ -306,11 +306,11 @@ log.error("Error occurred", error);
 
 ### Log Levels
 
-Controlled by `LOG_LEVEL` environment variable:
-- `debug` - All messages
-- `info` - Info, warn, error (default)
-- `warn` - Warn, error only
-- `error` - Errors only
+Controlled by `LOG_LEVEL` environment variable (default: `debug`):
+- `debug` - All messages (default; use for actions and status changes)
+- `info` - Notable events (command executed, feature initialized, etc.)
+- `warn` - Recoverable issues (fallbacks, retries)
+- `error` - Failures (exceptions, failed operations)
 
 ## Services
 
