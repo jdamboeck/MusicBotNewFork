@@ -12,6 +12,8 @@ module.exports = {
 	target: "player",
 
 	async handle(queue, ctx) {
+		const guildId = queue?.guild?.id ?? "unknown";
+		log.info("Queue empty, clearing activity (guild:", guildId, ")");
 		log.debug("Queue empty, clearing activity");
 
 		ctx.services.activity.setBotActivity(ctx.client, null);

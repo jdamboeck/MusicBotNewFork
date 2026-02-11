@@ -14,6 +14,7 @@ module.exports = {
 	async handle(queue, ctx) {
 		const guildId = queue?.channel?.guild?.id;
 		if (guildId) {
+			log.debug("Empty queue: stopping comment tracking session (guild:", guildId, ")");
 			services.stopTrackingSession(guildId);
 		}
 	},

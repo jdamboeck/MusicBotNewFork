@@ -15,7 +15,8 @@ module.exports = {
 	async handle(queue, track, ctx) {
 		const channel = queue.channel;
 		const guild = channel?.guild;
-		log.info("track:", track?.title, "channel:", channel?.id, "guild:", guild?.id);
+		log.info("Track started:", track?.title, "| channel:", channel?.id, "| guild:", guild?.id);
+		log.debug("playerStart: setting initial activity and soundboard");
 
 		const { activity, soundboard } = ctx.services;
 

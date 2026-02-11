@@ -11,6 +11,8 @@ module.exports = {
 	target: "player",
 
 	async handle(queue, error, ctx) {
-		log.error("Error emitted from the queue:", error.message);
+		const guildId = queue?.guild?.id ?? "unknown";
+		log.error("Queue error (guild:", guildId, "):", error.message);
+		log.debug("Queue error details:", error);
 	},
 };

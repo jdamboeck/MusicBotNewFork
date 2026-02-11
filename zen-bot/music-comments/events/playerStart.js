@@ -18,6 +18,7 @@ module.exports = {
 
 		if (enqueuedMessage && guild && track) {
 			try {
+				log.debug("Player start: starting comment tracking (guild:", guild.id, "track:", track.url?.slice(0, 40), "...)");
 				// Start tracking session for this playback
 				services.startTrackingSession(guild.id, enqueuedMessage, track.url);
 
@@ -26,6 +27,8 @@ module.exports = {
 			} catch (err) {
 				log.error("Failed to setup track comments:", err);
 			}
+		} else if (!enqueuedMessage && guild && track) {
+			log.debug("Player start: no enqueued message for comments (guild:", guild.id, ")");
 		}
 	},
 };

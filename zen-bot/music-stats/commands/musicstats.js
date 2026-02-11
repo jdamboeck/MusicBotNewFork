@@ -21,6 +21,7 @@ module.exports = {
 	async execute(message, args, ctx) {
 		const guildId = message.guild.id;
 		const userId = message.author.id;
+		log.debug("Musicstats requested (guild:", guildId, "user:", message.author.username, ")");
 
 		try {
 			const { music } = ctx.db;
@@ -75,6 +76,7 @@ module.exports = {
 				});
 			}
 
+			log.info("Musicstats sent (guild:", guildId, "totalPlays:", totalPlays, ")");
 			return message.reply({ content: response, flags: MessageFlagsBitField.Flags.SuppressEmbeds });
 		} catch (e) {
 			log.error("Failed to get music stats:", e);

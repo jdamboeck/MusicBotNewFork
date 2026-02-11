@@ -64,7 +64,7 @@ Do not commit `env.json`; it is listed in `.gitignore`.
 |----------|---------|-------------|
 | `BOT_TOKEN` | — | Discord bot token (required) |
 | `PREFIX` | `#` | Command prefix |
-| `LOG_LEVEL` | `info` | Logging level: debug, info, warn, error |
+| `LOG_LEVEL` | `debug` | Logging level: debug, info, warn, error |
 | `MUSIC_VOLUME` | `80` | Default playback volume (0-100) |
 | `MUSIC_LEAVE_ON_EMPTY_COOLDOWN` | `30000` | Leave empty channel after (ms) |
 | `MUSIC_LEAVE_ON_END_COOLDOWN` | `30000` | Leave after queue ends (ms) |

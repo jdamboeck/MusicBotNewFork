@@ -30,8 +30,12 @@ module.exports = {
 		log.debug(`Command: ${commandName}, Args: ${args.join(" ")}`);
 
 		const command = ctx.commands.get(commandName);
-		if (!command) return false;
+		if (!command) {
+			log.debug(`Unknown command: ${commandName}`);
+			return false;
+		}
 
+		log.info(`Executing command: ${commandName} (by ${message.author.username})`);
 		try {
 			await command.execute(message, args, ctx);
 		} catch (err) {

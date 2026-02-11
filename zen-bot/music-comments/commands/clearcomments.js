@@ -13,13 +13,16 @@ module.exports = {
 
 	async execute(message, args, ctx) {
 		if (!message.member.permissions.has("Administrator")) {
+			log.debug("Clearcomments refused: user lacks Administrator (guild:", message.guild.id, ")");
 			return message.reply("🛑 You need the 'Administrator' permission to use this command.");
 		}
 
 		const guildId = message.guild.id;
+		log.info("Clearing all track comments for guild:", guildId);
 
 		try {
 			const deletedCount = ctx.db.music.clearTrackComments(guildId);
+			log.info("Cleared", deletedCount, "track comments (guild:", guildId, ")");
 			return message.reply(`✅ Cleared ${deletedCount} track comment${deletedCount !== 1 ? "s" : ""} for this server.`);
 		} catch (e) {
 			log.error("Failed to clear track comments:", e);
