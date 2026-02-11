@@ -1,5 +1,11 @@
-const { ActivityType } = require("discord-api-types/v10");
+/**
+ * Bot activity and voice channel status management.
+ */
 
+const { ActivityType } = require("discord-api-types/v10");
+const { createLogger } = require("../logger");
+
+const log = createLogger("activity");
 const MAX_ACTIVITY_LEN = 128;
 
 /**
@@ -37,7 +43,7 @@ function setBotActivity(client, activityOrName) {
 
 /**
  * Set the voice channel status (the status text shown under the bot in the voice channel).
- * Uses Discord API PUT /channels/:id/voice-status. Bot must be in the channel; often requires Manage Channels.
+ * Uses Discord API PUT /channels/:id/voice-status. Bot must be in the channel.
  * @param {import("discord.js").Client} client
  * @param {import("discord.js").VoiceChannel|string} voiceChannel
  * @param {string|null} status
@@ -48,9 +54,9 @@ async function setVoiceChannelStatus(client, voiceChannel, status) {
 	const text = status == null ? "" : String(status).slice(0, MAX_ACTIVITY_LEN);
 	try {
 		await client.rest.put(`/channels/${channelId}/voice-status`, { body: { status: text } });
-		console.log("[voiceChannelStatus] Set to:", text || "(empty)");
+		log.debug("Set voice status to:", text || "(empty)");
 	} catch (e) {
-		console.warn("[voiceChannelStatus] Failed:", e.message || e);
+		log.warn("Failed to set voice status:", e.message || e);
 	}
 }
 

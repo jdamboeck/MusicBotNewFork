@@ -1,8 +1,13 @@
-const Database = require("better-sqlite3");
-const path = require("path");
+/**
+ * Database module - SQLite connection and all queries.
+ * Handles both play history and track comments tables.
+ */
 
-// Database file location (in project root)
-const DB_PATH = path.join(__dirname, "..", "musicstats.db");
+const Database = require("better-sqlite3");
+const { createLogger } = require("../core/logger");
+const config = require("./config");
+
+const log = createLogger("database");
 
 let db = null;
 
@@ -13,7 +18,7 @@ let db = null;
 function initDatabase() {
 	if (db) return db;
 
-	db = new Database(DB_PATH);
+	db = new Database(config.dbPath);
 
 	// Create the play_history table
 	db.exec(`
@@ -32,7 +37,7 @@ function initDatabase() {
 		CREATE INDEX IF NOT EXISTS idx_guild_id ON play_history(guild_id);
 	`);
 
-	// Create the track_comments table for storing user comments at specific timestamps
+	// Create the track_comments table
 	db.exec(`
 		CREATE TABLE IF NOT EXISTS track_comments (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,18 +53,14 @@ function initDatabase() {
 		CREATE INDEX IF NOT EXISTS idx_track_comments_video ON track_comments(video_url, guild_id);
 	`);
 
-	console.log("[Database] Initialized SQLite database at", DB_PATH);
+	log.info("Initialized SQLite database at", config.dbPath);
 	return db;
 }
 
+// ---- Play History Queries ----
+
 /**
  * Record a video play in the database.
- * @param {Object} params
- * @param {string} params.videoUrl - The URL of the video
- * @param {string} params.videoTitle - The title of the video
- * @param {string} params.userId - Discord user ID who played it
- * @param {string} params.userName - Discord username
- * @param {string} params.guildId - Discord guild/server ID
  */
 function recordPlay({ videoUrl, videoTitle, userId, userName, guildId }) {
 	if (!db) initDatabase();
@@ -70,14 +71,11 @@ function recordPlay({ videoUrl, videoTitle, userId, userName, guildId }) {
 	`);
 
 	stmt.run(videoUrl, videoTitle, userId, userName, guildId);
-	console.log(`[Database] Recorded play: "${videoTitle}" by ${userName}`);
+	log.debug(`Recorded play: "${videoTitle}" by ${userName}`);
 }
 
 /**
- * Get the top played videos overall (across all users in a guild).
- * @param {string} guildId - Discord guild ID
- * @param {number} limit - Number of results to return
- * @returns {Array<{video_url: string, video_title: string, play_count: number, last_played: string}>}
+ * Get the top played videos overall in a guild.
  */
 function getTopVideosOverall(guildId, limit = 10) {
 	if (!db) initDatabase();
@@ -100,10 +98,6 @@ function getTopVideosOverall(guildId, limit = 10) {
 
 /**
  * Get the top played videos by a specific user.
- * @param {string} guildId - Discord guild ID
- * @param {string} userId - Discord user ID
- * @param {number} limit - Number of results to return
- * @returns {Array<{video_url: string, video_title: string, play_count: number, last_played: string}>}
  */
 function getTopVideosByUser(guildId, userId, limit = 10) {
 	if (!db) initDatabase();
@@ -126,8 +120,6 @@ function getTopVideosByUser(guildId, userId, limit = 10) {
 
 /**
  * Get total play count for a guild.
- * @param {string} guildId - Discord guild ID
- * @returns {number}
  */
 function getTotalPlays(guildId) {
 	if (!db) initDatabase();
@@ -141,9 +133,6 @@ function getTotalPlays(guildId) {
 
 /**
  * Get total play count for a user in a guild.
- * @param {string} guildId - Discord guild ID
- * @param {string} userId - Discord user ID
- * @returns {number}
  */
 function getUserTotalPlays(guildId, userId) {
 	if (!db) initDatabase();
@@ -156,10 +145,7 @@ function getUserTotalPlays(guildId, userId) {
 }
 
 /**
- * Get the top listeners (users with most plays) in a guild.
- * @param {string} guildId - Discord guild ID
- * @param {number} limit - Number of results to return
- * @returns {Array<{user_id: string, user_name: string, play_count: number}>}
+ * Get the top listeners in a guild.
  */
 function getTopListeners(guildId, limit = 10) {
 	if (!db) initDatabase();
@@ -181,8 +167,6 @@ function getTopListeners(guildId, limit = 10) {
 
 /**
  * Clear all music stats for a guild.
- * @param {string} guildId - Discord guild ID
- * @returns {number} Number of records deleted
  */
 function clearMusicStats(guildId) {
 	if (!db) initDatabase();
@@ -192,19 +176,14 @@ function clearMusicStats(guildId) {
 	`);
 
 	const result = stmt.run(guildId);
-	console.log(`[Database] Cleared ${result.changes} music stats records for guild ${guildId}`);
+	log.info(`Cleared ${result.changes} music stats records for guild ${guildId}`);
 	return result.changes;
 }
 
+// ---- Track Comment Queries ----
+
 /**
  * Save a track comment with its timestamp.
- * @param {Object} params
- * @param {string} params.videoUrl - The URL of the video
- * @param {string} params.guildId - Discord guild/server ID
- * @param {string} params.userId - Discord user ID who commented
- * @param {string} params.userName - Discord username
- * @param {string} params.commentText - The comment text
- * @param {number} params.timestampMs - Timestamp in milliseconds when the comment was made
  */
 function saveTrackComment({ videoUrl, guildId, userId, userName, commentText, timestampMs }) {
 	if (!db) initDatabase();
@@ -215,14 +194,11 @@ function saveTrackComment({ videoUrl, guildId, userId, userName, commentText, ti
 	`);
 
 	stmt.run(videoUrl, guildId, userId, userName, commentText, timestampMs);
-	console.log(`[Database] Saved track comment at ${timestampMs}ms by ${userName}: "${commentText.slice(0, 50)}..."`);
+	log.debug(`Saved track comment at ${timestampMs}ms by ${userName}`);
 }
 
 /**
  * Get all comments for a track in a guild, sorted by timestamp.
- * @param {string} videoUrl - The URL of the video
- * @param {string} guildId - Discord guild ID
- * @returns {Array<{id: number, user_id: string, user_name: string, comment_text: string, timestamp_ms: number, created_at: string}>}
  */
 function getTrackComments(videoUrl, guildId) {
 	if (!db) initDatabase();
@@ -239,8 +215,6 @@ function getTrackComments(videoUrl, guildId) {
 
 /**
  * Clear all track comments for a guild.
- * @param {string} guildId - Discord guild ID
- * @returns {number} Number of records deleted
  */
 function clearTrackComments(guildId) {
 	if (!db) initDatabase();
@@ -250,15 +224,12 @@ function clearTrackComments(guildId) {
 	`);
 
 	const result = stmt.run(guildId);
-	console.log(`[Database] Cleared ${result.changes} track comments for guild ${guildId}`);
+	log.info(`Cleared ${result.changes} track comments for guild ${guildId}`);
 	return result.changes;
 }
 
 /**
  * Clear all track comments for a specific video in a guild.
- * @param {string} videoUrl - The video URL
- * @param {string} guildId - Discord guild ID
- * @returns {number} Number of records deleted
  */
 function clearVideoComments(videoUrl, guildId) {
 	if (!db) initDatabase();
@@ -268,7 +239,7 @@ function clearVideoComments(videoUrl, guildId) {
 	`);
 
 	const result = stmt.run(videoUrl, guildId);
-	console.log(`[Database] Cleared ${result.changes} comments for video ${videoUrl} in guild ${guildId}`);
+	log.info(`Cleared ${result.changes} comments for video in guild ${guildId}`);
 	return result.changes;
 }
 
@@ -279,7 +250,7 @@ function closeDatabase() {
 	if (db) {
 		db.close();
 		db = null;
-		console.log("[Database] Closed database connection");
+		log.info("Closed database connection");
 	}
 }
 
