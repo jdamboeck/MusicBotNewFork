@@ -23,20 +23,14 @@ module.exports = {
 		const userId = message.author.id;
 
 		try {
-			const {
-				getTopVideosOverall,
-				getTopVideosByUser,
-				getTopListeners,
-				getTotalPlays,
-				getUserTotalPlays,
-			} = ctx.db;
+			const { music } = ctx.db;
 
 			// Get stats
-			const topOverall = getTopVideosOverall(guildId, 10);
-			const topByUser = getTopVideosByUser(guildId, userId, 10);
-			const topListeners = getTopListeners(guildId, 10);
-			const totalPlays = getTotalPlays(guildId);
-			const userTotalPlays = getUserTotalPlays(guildId, userId);
+			const topOverall = music.getTopVideosOverall(guildId, 10);
+			const topByUser = music.getTopVideosByUser(guildId, userId, 10);
+			const topListeners = music.getTopListeners(guildId, 10);
+			const totalPlays = music.getTotalPlays(guildId);
+			const userTotalPlays = music.getUserTotalPlays(guildId, userId);
 
 			// Build the response
 			let response = "📊 **Music Stats**\n\n";

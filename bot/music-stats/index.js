@@ -1,9 +1,14 @@
 /**
- * Music stats feature - Database initialization and play tracking.
+ * Music stats feature - Database namespace for play tracking and comments.
+ *
+ * This feature registers the 'music' namespace on ctx.db, providing
+ * database operations for music playback history and track comments.
+ *
+ * Access: ctx.db.music.[method]
  */
 
 const { createLogger } = require("../core/logger");
-const database = require("./database");
+const { initMusicDatabase } = require("./database");
 
 const log = createLogger("music-stats");
 
@@ -14,13 +19,11 @@ const log = createLogger("music-stats");
 async function init(ctx) {
 	log.info("Initializing music-stats...");
 
-	// Initialize database
-	database.initDatabase();
+	// Register the 'music' database namespace
+	// This makes all music database functions available at ctx.db.music
+	ctx.db.register("music", initMusicDatabase);
 
-	// Export database for other features
-	ctx.db = database;
-
-	log.info("Music-stats initialized");
+	log.info("Music-stats initialized (ctx.db.music available)");
 }
 
 module.exports = { init };

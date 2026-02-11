@@ -1,7 +1,7 @@
 {
-  "name": "MusicBotNewFork",
-  "version": "1.0.1",
-  "description": "Discord music bot with yt-dlp and PO token support for YouTube",
+  "name": "zen-discord-bot",
+  "version": "1.0.0",
+  "description": "An expandable and zen approach to Discord bots",
   "main": "main.js",
   "scripts": {
     "start": "node main.js",

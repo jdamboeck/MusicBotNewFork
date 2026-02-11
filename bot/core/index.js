@@ -1,11 +1,12 @@
 /**
- * Core feature - Discord client, command registry, services.
+ * Core feature - Discord client, command registry, services, database.
  */
 
 const { Client, GatewayIntentBits } = require("discord.js");
 const { createLogger } = require("./logger");
 const config = require("./config");
 const { loadCommands } = require("./commands");
+const { createDatabaseContext } = require("./database");
 const activity = require("./services/activity");
 const soundboard = require("./services/soundboard");
 
@@ -27,6 +28,9 @@ async function init(ctx) {
 			GatewayIntentBits.MessageContent,
 		],
 	});
+
+	// Initialize database context (features register their namespaces)
+	ctx.db = createDatabaseContext();
 
 	// Load commands from all features
 	ctx.commands = loadCommands();

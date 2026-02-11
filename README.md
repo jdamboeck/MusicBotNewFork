@@ -1,19 +1,41 @@
-# MusicBotNewFork
+# zen-discord-bot
 
-Discord music bot that plays audio from YouTube (and other sources) using **yt-dlp**, with optional **PO token** support to help with YouTube bot detection.
+An expandable and zen approach to Discord bots.
+
+Built with a feature-based architecture that keeps things simple: **automatism over configuration, minimalism over complexity**.
+
+## Features
+
+**Music Playback**
+- Play audio from YouTube (and other sources) via `yt-dlp`
+- PO token support to bypass YouTube bot detection
+- Queue management with pause/resume/stop
+
+**Music Stats**
+- Track play history per guild
+- View top tracks and top listeners
+- Per-user and global statistics
+
+**Music Comments**
+- Reply to the "enqueued" message while music plays
+- Comments are saved with their timestamp
+- Comments replay automatically on future plays
+
+**Moderation**
+- Bulk message deletion
 
 ## Requirements
 
 - **Node.js** 18+
 - **FFmpeg** (used by discord-player for audio)
 - **Discord bot token** ([Discord Developer Portal](https://discord.com/developers/applications))
-- **yt-dlp**: either installed on your system or downloaded automatically by postinstall to the project root
+- **yt-dlp**: installed on your system or downloaded automatically by postinstall
 
 ## Installation
 
 ```bash
 git clone <this-repo>
-cd MusicBotNewFork
+cd zen-discord-bot
 npm install
 ```
 
@@ -21,7 +43,7 @@ Configure your bot token (see [Configuration](#configuration)), then run the bot
 
 ## Configuration
 
-### Bot token
+### Bot Token
 
 Use either:
 
@@ -36,20 +58,34 @@ Use either:
 
 Do not commit `env.json`; it is listed in `.gitignore`.
 
-### Discord bot setup
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BOT_TOKEN` | — | Discord bot token (required) |
+| `PREFIX` | `#` | Command prefix |
+| `LOG_LEVEL` | `info` | Logging level: debug, info, warn, error |
+| `MUSIC_VOLUME` | `80` | Default playback volume (0-100) |
+| `MUSIC_LEAVE_ON_EMPTY_COOLDOWN` | `30000` | Leave empty channel after (ms) |
+| `MUSIC_LEAVE_ON_END_COOLDOWN` | `30000` | Leave after queue ends (ms) |
+| `PO_TOKEN_URL` | `http://127.0.0.1:4416` | PO token provider URL |
+| `PO_TOKEN_TTL_HOURS` | `6` | Token cache duration |
+| `DB_PATH` | `bot.db` | SQLite database file path |
+
+### Discord Bot Setup
 
 In the Discord Developer Portal, enable:
 
 - **Message Content Intent** (required for prefix commands)
-- **Server Members Intent** if you need member info
+- **Server Members Intent** (if you need member info)
 
-Invite the bot to your server with scopes: `bot`, and permissions: **Connect**, **Speak**, **Send Messages**, **Use Slash Commands** (if you add them later).
+Invite the bot with scopes: `bot`, and permissions: **Connect**, **Speak**, **Send Messages**, **Read Message History**.
 
 ## Usage
 
-### Run bot + PO token provider (recommended for YouTube)
+### Run with PO Token Provider (Recommended)
 
-Starts the BgUtil PO token provider (for YouTube), then the music bot. Use this if you want the best chance of avoiding YouTube 403s:
+Starts the BgUtil PO token provider (for YouTube), then the music bot:
 
 **Linux / macOS:**
 
@@ -65,71 +101,94 @@ npm run start:full
 start.bat
 ```
 
-The postinstall script automatically clones, builds, and sets up the PO token provider, so everything is ready after `npm install`.
+### Run Bot Only
 
-### Run bot only
-
-If the PO token provider is already running (e.g. in another terminal or as a service), or you do not need it:
+If the PO token provider is already running or you don't need it:
 
 ```bash
 npm start
 ```
 
-The provider listens on `http://127.0.0.1:4416` by default. To use another host/port, set it in `po-token-provider.js` and when starting the provider (e.g. `node build/main.js --port 8080`).
-
-## Docker
-
-Build the image (from the project root):
-
-```bash
-docker build -t music-bot .
-```
-
-Run the container. Pass your Discord bot token via the `BOT_TOKEN` environment variable (replace with your real token):
-
-```bash
-docker run --rm -e BOT_TOKEN=your_discord_bot_token_here music-bot
-```
-
-The image runs both the PO token provider and the bot (same as `./start.sh`). FFmpeg, Python, and the canvas build dependencies for the provider are included.
-
-For **CapRover** (or other PaaS using captain-definition), deploy the app and set `BOT_TOKEN` in the app's environment variables. The repo includes a `captain-definition` file that builds from this Dockerfile.
-
 ## Commands
 
-All commands use the **`#`** prefix.
+Default prefix: `#`
 
-| Command   | Description                    |
-|----------|--------------------------------|
-| `#play <query>` | Play a track. `<query>` can be a YouTube (or other) URL or a search term (e.g. `#play bjork army of me`). |
-| `#stop`  | Stop playback and clear the queue. |
-| `#pause` | Pause playback.                |
-| `#resume`| Resume playback.               |
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `#play <query>` | `#p` | Play a track (URL or search term) |
+| `#stop` | — | Stop playback and clear queue |
+| `#pause` | — | Pause playback |
+| `#resume` | — | Resume playback |
+| `#musicstats` | — | Show play statistics |
+| `#clearmusicstats` | — | Clear all music stats |
+| `#clearcomments` | — | Clear all track comments |
+| `#clearvideo` | — | Clear comments for current track |
+| `#clear <n>` | — | Delete last n messages (max 100) |
 
 You must be in a voice channel to use `#play`.
 
-## How it works
+### Track Comments
 
-- **discord-player** handles queues and audio; **yt-dlp** is used to resolve and stream YouTube (and similar) content via a custom extractor.
-- **PO token provider** ([bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider)) runs as a small HTTP service and provides proof-of-origin tokens. The bot fetches a token and passes it to yt-dlp to reduce the chance of YouTube returning 403. Tokens are cached for 6 hours.
-- **yt-dlp** is resolved in this order: system `yt-dlp` in PATH → project-root `yt-dlp` binary (downloaded automatically by postinstall if not in PATH).
-- **yt-dlp plugins** are loaded from the `yt-dlp-plugins/` directory next to the yt-dlp binary. The postinstall script copies the bgutil plugin there automatically.
+While music plays, reply to the "**[track] enqueued!**" message. Your reply is saved with its timestamp. Next time that track plays, your comment appears at the same moment.
 
-### What postinstall does
+## Docker
 
-When you run `npm install`, the postinstall scripts:
+Build the image:
 
-1. **`ensure-bgutil-plugin.js`** — Clones `bgutil-ytdlp-pot-provider` (if not already present), copies the yt-dlp plugin to `yt-dlp-plugins/`, and builds the provider server (`npm install` + `npx tsc`).
-2. **`ensure-yt-dlp.js`** — Downloads the `yt-dlp` binary to the project root if it's not already installed system-wide.
+```bash
+docker build -t zen-discord-bot .
+```
+
+Run with your token:
+
+```bash
+docker run --rm -e BOT_TOKEN=your_token_here zen-discord-bot
+```
+
+The image runs both the PO token provider and the bot. FFmpeg, Python, and all dependencies are included.
+
+### CapRover
+
+Deploy using the included `captain-definition`. Set `BOT_TOKEN` in the app's environment variables.
+
+## How It Works
+
+- **discord-player** handles queues and audio
+- **yt-dlp** resolves and streams media via a custom extractor
+- **PO token provider** ([bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider)) provides proof-of-origin tokens to avoid YouTube 403 errors
+- **yt-dlp path resolution**: system PATH → project-root binary (downloaded by postinstall)
+- **yt-dlp plugins** load from `yt-dlp-plugins/` directory
+
+### Postinstall Scripts
+
+When you run `npm install`:
+
+1. **`ensure-bgutil-plugin.js`** — Clones, builds, and sets up the PO token provider
+2. **`ensure-yt-dlp.js`** — Downloads yt-dlp binary if not installed system-wide
 
 ## Troubleshooting
 
-- **"Missing or invalid env.json"** — Set `BOT_TOKEN` or create `env.json` from `env.example.json` with your Discord bot token.
-- **"Cannot find package 'axios'"** — The PO provider's dependencies are not installed. Run `npm install` (postinstall handles this automatically). If it still fails, run `npm install` inside `bgutil-ytdlp-pot-provider/server` and ensure `build/main.js` exists (`npx tsc` there).
-- **EACCES on yt-dlp** — The local `yt-dlp` file is not executable. Run `chmod +x yt-dlp` or install yt-dlp system-wide (PATH takes priority).
-- **403 from YouTube** — Ensure the PO token provider is running (`npm run start:full` / `start.bat`, or start it manually). If it still fails, YouTube may be blocking your IP or require other measures (e.g. cookies).
-- **No audio** — Ensure FFmpeg is installed and on your PATH.
-- **Plugin not loading** — Verify `yt-dlp-plugins/bgutil-ytdlp-pot-provider/yt_dlp_plugins/extractor/` exists. If not, re-run `npm install` or manually copy from `bgutil-ytdlp-pot-provider/plugin/`.
+| Problem | Solution |
+|---------|----------|
+| Missing or invalid env.json | Set `BOT_TOKEN` env var or create `env.json` |
+| EACCES on yt-dlp | Run `chmod +x yt-dlp` or install yt-dlp system-wide |
+| 403 from YouTube | Ensure PO token provider is running (`start:full`) |
+| No audio | Ensure FFmpeg is installed and on PATH |
+| Plugin not loading | Re-run `npm install` to rebuild plugins |
+
+## Architecture
+
+zen-discord-bot uses a feature-based architecture. See [CONTRIBUTING.md](CONTRIBUTING.md) for developer documentation.
+
+```
+bot/
+├── index.js          # Feature loader
+├── core/             # Core feature (client, commands, services)
+├── music/            # Music playback
+├── music-stats/      # Play history tracking
+├── music-comments/   # Timestamp comments
+└── moderation/       # Message moderation
+```
 
 ## License
 

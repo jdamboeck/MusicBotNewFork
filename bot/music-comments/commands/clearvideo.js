@@ -27,7 +27,7 @@ module.exports = {
 		}
 
 		try {
-			const deletedCount = ctx.db.clearVideoComments(session.trackUrl, guildId);
+			const deletedCount = ctx.db.music.clearVideoComments(session.trackUrl, guildId);
 			return message.reply(`✅ Cleared ${deletedCount} comment${deletedCount !== 1 ? "s" : ""} for this video.`);
 		} catch (e) {
 			log.error("Failed to clear video comments:", e);

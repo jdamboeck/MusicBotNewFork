@@ -12,13 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Invalidate cache when main branch changes
-ADD https://api.github.com/repos/jdamboeck/MusicBotNewFork/git/ref/heads/main version.json
-
-RUN git init && \
-    git remote add origin https://github.com/jdamboeck/MusicBotNewFork.git && \
-    git fetch --depth 1 origin main && \
-    git checkout -b main --track origin/main
+# Copy application files
+COPY . .
 
 RUN npm install
 
