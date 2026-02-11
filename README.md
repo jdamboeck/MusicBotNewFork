@@ -8,6 +8,8 @@ An expandable and zen approach to Discord bots.
 
 Built with a feature-based architecture that keeps things simple: **automatism over configuration, minimalism over complexity**.
 
+> **Disclaimer:** This project was built under extreme vibe coding conditions. May contain traces of flow state, questionable variable names past 2am, and the conviction that *this time* the architecture is definitely the right one. Use with appropriate levels of chill.
+
 ## Features
 
 **Music Playback**
