@@ -10,7 +10,7 @@ YouTube increasingly blocks requests it identifies as bots. The PO token provide
 
 ```
 ┌─────────────────┐     HTTP      ┌──────────────────────────┐
-│   Music Bot     │──────────────▶│  PO Token Provider       │
+│   zen-bot       │──────────────▶│  PO Token Provider       │
 │   (Node.js)     │               │  (bgutil-ytdlp-pot-      │
 │                 │◀──────────────│   provider)              │
 │  - po-token.js  │   PO Token    │  Port 4416               │
@@ -38,7 +38,7 @@ Setup is automatic during `npm install` via `scripts/ensure-bgutil-plugin.js`.
 
 ### Token Cache (`po-token.js`)
 
-Located in `bot/music/po-token.js`, this module:
+Located in `zen-bot/music/po-token.js`, this module:
 
 - Fetches tokens from the provider server
 - Caches tokens for configurable duration (default: 6 hours)
@@ -47,7 +47,7 @@ Located in `bot/music/po-token.js`, this module:
 
 ### Extractor Integration (`extractor.js`)
 
-The custom `YtDlpExtractor` in `bot/music/extractor.js`:
+The custom `YtDlpExtractor` in `zen-bot/music/extractor.js`:
 
 - Checks if URL is a YouTube URL
 - Fetches PO token for YouTube requests
@@ -68,7 +68,7 @@ Environment variables (with defaults):
 
 ### Recommended: Start Both Services
 
-Use `npm run start:full` (or `./start.sh` / `start.bat`) to start both the provider and bot:
+Use `npm run start:full` (or `./start.sh` / `start.bat`) to start both the provider and zen-bot:
 
 ```bash
 npm run start:full
@@ -77,8 +77,8 @@ npm run start:full
 This:
 1. Starts the PO token provider in the background
 2. Waits for it to initialize
-3. Starts the music bot
-4. Stops the provider when the bot exits
+3. Starts zen-bot
+4. Stops the provider when zen-bot exits
 
 ### Manual Start
 
@@ -89,7 +89,7 @@ cd bgutil-ytdlp-pot-provider/server
 node build/main.js
 ```
 
-Start the bot in another:
+Start zen-bot in another:
 
 ```bash
 npm start
@@ -145,7 +145,7 @@ Look for `[po-token]` log entries.
 
 ## How Tokens Work
 
-1. Bot receives play request for YouTube URL
+1. zen-bot receives play request for YouTube URL
 2. Extractor calls `fetchPoToken()`
 3. Cache returns existing token or fetches new one
 4. Token is passed to yt-dlp as `--po-token` argument

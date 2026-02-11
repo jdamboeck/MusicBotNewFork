@@ -5,7 +5,7 @@
  * - Commands that modify state
  * - Simple confirmation responses
  *
- * @module bot/example/commands/resetgreet
+ * @module zen-bot/example/commands/resetgreet
  */
 
 const { createLogger } = require("../../core/logger");

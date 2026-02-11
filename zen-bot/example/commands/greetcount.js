@@ -6,7 +6,7 @@
  * - Using ctx.db for database queries (when available)
  * - Conditional logic based on feature availability
  *
- * @module bot/example/commands/greetcount
+ * @module zen-bot/example/commands/greetcount
  */
 
 const { createLogger } = require("../../core/logger");

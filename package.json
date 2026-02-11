@@ -1,7 +1,7 @@
 {
-  "name": "zen-discord-bot",
-  "version": "1.0.0",
-  "description": "An expandable and zen approach to Discord bots",
+  "name": "zen-bot",
+  "version": "0.02.01",
+  "description": "zen-bot for Discord - An expandable and zen approach to Discord bots",
   "main": "main.js",
   "scripts": {
     "start": "node main.js",

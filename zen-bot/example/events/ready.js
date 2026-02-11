@@ -9,7 +9,7 @@
  * NOTE: This event fires once when the bot first connects.
  * Multiple features can have ready handlers - they all run.
  *
- * @module bot/example/events/ready
+ * @module zen-bot/example/events/ready
  */
 
 const { createLogger } = require("../../core/logger");

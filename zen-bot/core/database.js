@@ -10,7 +10,7 @@
  * - Features call ctx.db.register(namespace, initFn) to add their tables
  * - Query functions are accessed via ctx.db.[namespace].[method]
  *
- * @module bot/core/database
+ * @module zen-bot/core/database
  */
 
 const Database = require("better-sqlite3");
@@ -22,7 +22,7 @@ const log = createLogger("database");
  * Database path - configurable via environment variable.
  * @type {string}
  */
-const dbPath = process.env.DB_PATH || "bot.db";
+const dbPath = process.env.DB_PATH || "zen-bot.db";
 
 /**
  * The shared database connection.

@@ -6,7 +6,7 @@
  *
  * Access via: ctx.db.music.[method]
  *
- * @module bot/music-stats/database
+ * @module zen-bot/music-stats/database
  */
 
 const { createLogger } = require("../core/logger");

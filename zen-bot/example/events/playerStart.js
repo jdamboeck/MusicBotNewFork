@@ -18,7 +18,7 @@
  * - emptyQueue: Queue finished
  * - emptyChannel: Voice channel empty
  *
- * @module bot/example/events/playerStart
+ * @module zen-bot/example/events/playerStart
  */
 
 const { createLogger } = require("../../core/logger");

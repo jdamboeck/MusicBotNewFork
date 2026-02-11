@@ -1,13 +1,13 @@
 # Example Feature
 
-This feature demonstrates all patterns and conventions in zen-discord-bot.
+This feature demonstrates all patterns and conventions in zen-bot.
 
 **Use this as a reference when creating your own features.**
 
 ## Structure
 
 ```
-bot/example/
+zen-bot/example/
 ├── index.js              # Feature entry point (required)
 ├── config.js             # Configuration with env overrides
 ├── database.js           # Database namespace registration
@@ -204,7 +204,7 @@ The database is persistent - greetings survive bot restarts.
 
 ## Enabling the Feature
 
-To enable this example feature, add it to `FEATURE_ORDER` in `bot/index.js`:
+To enable this example feature, add it to `FEATURE_ORDER` in `zen-bot/index.js`:
 
 ```javascript
 const FEATURE_ORDER = [

@@ -1,6 +1,6 @@
-# Contributing to zen-discord-bot
+# Contributing to zen-bot
 
-This document explains the architecture and conventions for developing features.
+This document explains the architecture and conventions for developing features for zen-bot.
 
 ## Philosophy
 
@@ -11,7 +11,7 @@ This document explains the architecture and conventions for developing features.
 ## Architecture Overview
 
 ```
-bot/
+zen-bot/
 ├── index.js              # Feature loader (orchestrates everything)
 ├── core/                 # Core feature
 │   ├── index.js          # Feature entry point (init function)
@@ -41,6 +41,8 @@ bot/
 │       └── emptyQueue.js
 └── [feature]/            # Your feature here
 ```
+
+> **Note:** The main application directory is `zen-bot/` (not `bot/`).
 
 ## The Context Object (`ctx`)
 
@@ -76,7 +78,7 @@ Features add their exports to `ctx` during initialization. Later features can ac
 ### 1. Create the Feature Directory
 
 ```
-bot/
+zen-bot/
 └── my-feature/
     ├── index.js          # Required: feature entry point
     ├── config.js         # Optional: feature configuration
@@ -89,7 +91,7 @@ bot/
 
 ### 2. Register in Feature Order
 
-Edit `bot/index.js` and add your feature to `FEATURE_ORDER`:
+Edit `zen-bot/index.js` and add your feature to `FEATURE_ORDER`:
 
 ```javascript
 const FEATURE_ORDER = [
@@ -142,7 +144,7 @@ module.exports = { init };
 
 ## Commands
 
-Commands live in `bot/[feature]/commands/[name].js`.
+Commands live in `zen-bot/[feature]/commands/[name].js`.
 
 ### Command Structure
 
@@ -182,7 +184,7 @@ module.exports = {
 
 ### Command Discovery
 
-Commands are auto-discovered by scanning `bot/*/commands/*.js`. No manual registration needed.
+Commands are auto-discovered by scanning `zen-bot/*/commands/*.js`. No manual registration needed.
 
 The `core` feature's command loader:
 1. Scans all feature directories
@@ -191,7 +193,7 @@ The `core` feature's command loader:
 
 ## Events
 
-Events live in `bot/[feature]/events/[eventName].js`.
+Events live in `zen-bot/[feature]/events/[eventName].js`.
 
 ### Event Structure
 
@@ -317,7 +319,7 @@ Services are shared utilities exposed through `ctx.services`.
 ### Creating a Service
 
 ```javascript
-// bot/my-feature/services.js
+// zen-bot/my-feature/services.js
 
 const { createLogger } = require("../core/logger");
 
@@ -378,7 +380,7 @@ ctx.db
 Create a `database.js` file in your feature:
 
 ```javascript
-// bot/my-feature/database.js
+// zen-bot/my-feature/database.js
 
 const { createLogger } = require("../core/logger");
 const log = createLogger("my-feature-db");
@@ -427,7 +429,7 @@ module.exports = { initMyFeatureDatabase };
 Register in your feature's `index.js`:
 
 ```javascript
-// bot/my-feature/index.js
+// zen-bot/my-feature/index.js
 
 const { initMyFeatureDatabase } = require("./database");
 
@@ -482,8 +484,8 @@ LOG_LEVEL=debug npm start
 
 ## Checklist for New Features
 
-- [ ] Create `bot/[feature]/index.js` with `init(ctx)` function
-- [ ] Add feature to `FEATURE_ORDER` in `bot/index.js` (after dependencies)
+- [ ] Create `zen-bot/[feature]/index.js` with `init(ctx)` function
+- [ ] Add feature to `FEATURE_ORDER` in `zen-bot/index.js` (after dependencies)
 - [ ] Create `config.js` if feature has configurable options
 - [ ] Create commands in `commands/` directory
 - [ ] Create event handlers in `events/` directory
@@ -501,4 +503,4 @@ LOG_LEVEL=debug npm start
 
 ## Example Feature
 
-See `bot/example/` for a fully documented example feature that demonstrates all patterns.
+See `zen-bot/example/` for a fully documented example feature that demonstrates all patterns.

@@ -11,7 +11,7 @@
  * Commands are auto-discovered from bot/[feature]/commands/*.js
  * No manual registration needed - just export the command module.
  *
- * @module bot/example/commands/greet
+ * @module zen-bot/example/commands/greet
  */
 
 const { createLogger } = require("../../core/logger");

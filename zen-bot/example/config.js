@@ -1,7 +1,7 @@
 /**
  * Example Feature Configuration
  *
- * This file demonstrates the configuration pattern for zen-discord-bot features.
+ * This file demonstrates the configuration pattern for zen-bot features.
  *
  * PATTERN:
  * - Define sensible defaults
@@ -14,7 +14,7 @@
  * - EXAMPLE_MAX_GREETINGS
  * - EXAMPLE_COOLDOWN_MS
  *
- * @module bot/example/config
+ * @module zen-bot/example/config
  */
 
 module.exports = {

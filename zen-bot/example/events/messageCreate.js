@@ -11,7 +11,7 @@
  * Events are auto-discovered from bot/[feature]/events/*.js
  * Multiple features can handle the same event - they run in FEATURE_ORDER.
  *
- * @module bot/example/events/messageCreate
+ * @module zen-bot/example/events/messageCreate
  */
 
 const { createLogger } = require("../../core/logger");
