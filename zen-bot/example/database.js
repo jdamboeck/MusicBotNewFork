@@ -12,7 +12,7 @@
  * 3. Return an object with all your query functions
  * 4. Register in your feature's index.js: ctx.db.register("example", initExampleDatabase)
  *
- * @module bot/example/database
+ * @module zen-bot/example/database
  */
 
 const { createLogger } = require("../core/logger");

@@ -1,5 +1,5 @@
 /**
- * Example Feature - Demonstrates all zen-discord-bot patterns.
+ * Example Feature - Demonstrates all zen-bot patterns.
  *
  * This feature serves as a reference implementation showing:
  * - Feature initialization with the context object
@@ -15,7 +15,7 @@
  *
  * Ensure this feature is listed AFTER core in FEATURE_ORDER.
  *
- * @module bot/example
+ * @module zen-bot/example
  */
 
 const { createLogger } = require("../core/logger");

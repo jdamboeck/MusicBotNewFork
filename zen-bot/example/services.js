@@ -15,7 +15,7 @@
  * - Complex logic that shouldn't live in commands
  * - Functionality that other features might want to use
  *
- * @module bot/example/services
+ * @module zen-bot/example/services
  */
 
 const { createLogger } = require("../core/logger");

@@ -10,20 +10,20 @@ const log = createLogger("commands");
 
 /**
  * Load all commands from feature directories.
- * Scans bot/[feature]/commands/[command].js for command files.
+ * Scans zen-bot/[feature]/commands/[command].js for command files.
  * @returns {Map<string, object>} Map of command name to command object
  */
 function loadCommands() {
 	const commands = new Map();
-	const botDir = path.join(__dirname, "..", "..");
+	const zenBotDir = path.join(__dirname, "..", "..");
 
 	// Get all feature directories
-	const features = fs.readdirSync(botDir, { withFileTypes: true })
+	const features = fs.readdirSync(zenBotDir, { withFileTypes: true })
 		.filter((d) => d.isDirectory() && d.name !== "node_modules")
 		.map((d) => d.name);
 
 	for (const feature of features) {
-		const commandsDir = path.join(botDir, feature, "commands");
+		const commandsDir = path.join(zenBotDir, feature, "commands");
 
 		if (!fs.existsSync(commandsDir)) continue;
 

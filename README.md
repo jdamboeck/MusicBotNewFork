@@ -1,4 +1,4 @@
-# zen-discord-bot
+# zen-bot for Discord
 
 An expandable and zen approach to Discord bots.
 
@@ -35,11 +35,11 @@ Built with a feature-based architecture that keeps things simple: **automatism o
 
 ```bash
 git clone <this-repo>
-cd zen-discord-bot
+cd zen-bot
 npm install
 ```
 
-Configure your bot token (see [Configuration](#configuration)), then run the bot.
+Configure your bot token (see [Configuration](#configuration)), then run zen-bot.
 
 ## Configuration
 
@@ -70,7 +70,7 @@ Do not commit `env.json`; it is listed in `.gitignore`.
 | `MUSIC_LEAVE_ON_END_COOLDOWN` | `30000` | Leave after queue ends (ms) |
 | `PO_TOKEN_URL` | `http://127.0.0.1:4416` | PO token provider URL |
 | `PO_TOKEN_TTL_HOURS` | `6` | Token cache duration |
-| `DB_PATH` | `bot.db` | SQLite database file path |
+| `DB_PATH` | `zen-bot.db` | SQLite database file path |
 
 ### Discord Bot Setup
 
@@ -85,7 +85,7 @@ Invite the bot with scopes: `bot`, and permissions: **Connect**, **Speak**, **Se
 
 ### Run with PO Token Provider (Recommended)
 
-Starts the BgUtil PO token provider (for YouTube), then the music bot:
+Starts the BgUtil PO token provider (for YouTube), then zen-bot:
 
 **Linux / macOS:**
 
@@ -101,7 +101,7 @@ npm run start:full
 start.bat
 ```
 
-### Run Bot Only
+### Run zen-bot Only
 
 If the PO token provider is already running or you don't need it:
 
@@ -136,16 +136,16 @@ While music plays, reply to the "**[track] enqueued!**" message. Your reply is s
 Build the image:
 
 ```bash
-docker build -t zen-discord-bot .
+docker build -t zen-bot .
 ```
 
 Run with your token:
 
 ```bash
-docker run --rm -e BOT_TOKEN=your_token_here zen-discord-bot
+docker run --rm -e BOT_TOKEN=your_token_here zen-bot
 ```
 
-The image runs both the PO token provider and the bot. FFmpeg, Python, and all dependencies are included.
+The image runs both the PO token provider and zen-bot. FFmpeg, Python, and all dependencies are included.
 
 ### CapRover
 
@@ -178,12 +178,12 @@ When you run `npm install`:
 
 ## Architecture
 
-zen-discord-bot uses a feature-based architecture. See [CONTRIBUTING.md](CONTRIBUTING.md) for developer documentation.
+zen-bot uses a feature-based architecture. See [CONTRIBUTING.md](CONTRIBUTING.md) for developer documentation.
 
 ```
-bot/
+zen-bot/
 ├── index.js          # Feature loader
-├── core/             # Core feature (client, commands, services)
+├── core/             # Core feature (client, commands, services, database)
 ├── music/            # Music playback
 ├── music-stats/      # Play history tracking
 ├── music-comments/   # Timestamp comments

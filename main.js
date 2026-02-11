@@ -1,10 +1,10 @@
 /**
- * Discord Music Bot - Entry Point
+ * zen-bot for Discord - Entry Point
  */
 
-const { start } = require("./bot");
+const { start } = require("./zen-bot");
 
 start().catch((err) => {
-	console.error("Failed to start bot:", err);
+	console.error("Failed to start zen-bot:", err);
 	process.exit(1);
 });

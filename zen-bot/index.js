@@ -105,10 +105,10 @@ function wireEvents(ctx, handlers) {
 }
 
 /**
- * Initialize and start the bot.
+ * Initialize and start zen-bot.
  */
 async function start() {
-	log.info("Starting bot...");
+	log.info("Starting zen-bot...");
 
 	// Shared context object
 	const ctx = {
@@ -121,12 +121,12 @@ async function start() {
 		musicConfig: null,
 	};
 
-	const botDir = __dirname;
+	const zenBotDir = __dirname;
 	const allHandlers = [];
 
 	// Load features in order
 	for (const featureName of FEATURE_ORDER) {
-		const featurePath = path.join(botDir, featureName);
+		const featurePath = path.join(zenBotDir, featureName);
 
 		if (!fs.existsSync(featurePath)) {
 			log.warn(`Feature not found: ${featureName}`);
@@ -164,16 +164,16 @@ async function start() {
 	log.info("Logging in to Discord...");
 	await ctx.client.login(ctx.config.botToken);
 
-	log.info("Bot started successfully!");
+	log.info("zen-bot started successfully!");
 	return ctx;
 }
 
 module.exports = { start };
 
-// If this is the entry point, start the bot
+// If this is the entry point, start zen-bot
 if (require.main === module) {
 	start().catch((err) => {
-		console.error("Failed to start bot:", err);
+		console.error("Failed to start zen-bot:", err);
 		process.exit(1);
 	});
 }
