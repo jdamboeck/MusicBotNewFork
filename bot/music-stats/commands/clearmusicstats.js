@@ -19,7 +19,7 @@ module.exports = {
 		const guildId = message.guild.id;
 
 		try {
-			const deletedCount = ctx.db.clearMusicStats(guildId);
+			const deletedCount = ctx.db.music.clearMusicStats(guildId);
 			return message.reply(`✅ Cleared ${deletedCount} music stats record${deletedCount !== 1 ? "s" : ""} for this server.`);
 		} catch (e) {
 			log.error("Failed to clear music stats:", e);

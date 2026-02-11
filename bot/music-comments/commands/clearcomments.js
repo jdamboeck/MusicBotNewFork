@@ -19,7 +19,7 @@ module.exports = {
 		const guildId = message.guild.id;
 
 		try {
-			const deletedCount = ctx.db.clearTrackComments(guildId);
+			const deletedCount = ctx.db.music.clearTrackComments(guildId);
 			return message.reply(`✅ Cleared ${deletedCount} track comment${deletedCount !== 1 ? "s" : ""} for this server.`);
 		} catch (e) {
 			log.error("Failed to clear track comments:", e);

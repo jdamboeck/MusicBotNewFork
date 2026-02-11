@@ -97,7 +97,7 @@ function scheduleCommentPlayback(guildId, message, trackUrl, ctx) {
 		return;
 	}
 
-	const comments = ctx.db.getTrackComments(trackUrl, guildId);
+	const comments = ctx.db.music.getTrackComments(trackUrl, guildId);
 	if (comments.length === 0) {
 		log.debug(`No comments to play back for track: ${trackUrl}`);
 		return;
@@ -189,7 +189,7 @@ function handlePotentialReply(message, ctx) {
 	}
 
 	try {
-		ctx.db.saveTrackComment({
+		ctx.db.music.saveTrackComment({
 			videoUrl: session.trackUrl,
 			guildId,
 			userId: message.author.id,

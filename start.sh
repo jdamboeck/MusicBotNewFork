@@ -11,7 +11,7 @@ echo "Waiting 5 seconds for provider to initialize..."
 sleep 5
 
 echo ""
-echo "Starting Music Bot..."
+echo "Starting zen-discord-bot..."
 node main.js
 
 # When the bot stops, also stop the PO provider
