@@ -22,8 +22,8 @@ module.exports = {
 				// Start tracking session for this playback
 				services.startTrackingSession(guild.id, enqueuedMessage, track.url);
 
-				// Schedule playback of any existing comments for this track
-				services.scheduleCommentPlayback(guild.id, enqueuedMessage, track.url, ctx);
+				// Schedule playback of comments and reactions in sync (single timeline by timestamp)
+				services.scheduleCommentAndReactionPlayback(guild.id, enqueuedMessage, track.url, ctx);
 			} catch (err) {
 				log.error("Failed to setup track comments:", err);
 			}
