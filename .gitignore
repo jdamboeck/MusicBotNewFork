@@ -1,13 +1,13 @@
 
 # Node modules
 node_modules/
-bgutil-ytdlp-pot-provider/server/build
+bgutil-ytdlp-pot-provider/**
 env.json
 po-provider.pid
-bgutil-ytdlp-pot-provider/server/tsconfig.tsbuildinfo
+
 **/__pycache__/**
 yt-dlp.exe
 yt-dlp
-bgutil-ytdlp-pot-provider/
-yt-dlp-plugins/
+
+yt-dlp-plugins/**
 musicstats.db

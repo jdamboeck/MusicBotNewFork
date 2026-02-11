@@ -1,0 +1,31 @@
+/**
+ * Player start event - starts tracking session and schedules comments.
+ */
+
+const { createLogger } = require("../../core/logger");
+const services = require("../services");
+
+const log = createLogger("music-comments");
+
+module.exports = {
+	event: "playerStart",
+	target: "player",
+
+	async handle(queue, track, ctx) {
+		const channel = queue.channel;
+		const guild = channel?.guild;
+		const enqueuedMessage = queue.metadata?.enqueuedMessage;
+
+		if (enqueuedMessage && guild && track) {
+			try {
+				// Start tracking session for this playback
+				services.startTrackingSession(guild.id, enqueuedMessage, track.url);
+
+				// Schedule playback of any existing comments for this track
+				services.scheduleCommentPlayback(guild.id, enqueuedMessage, track.url, ctx);
+			} catch (err) {
+				log.error("Failed to setup track comments:", err);
+			}
+		}
+	},
+};
